@@ -1,0 +1,14 @@
+[Unit]
+Description=Battery Test Dashboard V2
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/PhD_PiCode/LabSetupV2
+ExecStart=/home/pi/battery-test-env/bin/python3 /home/pi/PhD_PiCode/LabSetupV2/main_dashboard.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
