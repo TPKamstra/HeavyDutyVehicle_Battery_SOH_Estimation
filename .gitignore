@@ -1,0 +1,22 @@
+# Analytics dataset folders (raw/backup battery test logs — not committed)
+analytics/LOGBATTEST_Complete/
+analytics/LOGBATTEST/
+analytics/LOGBATTEST_backup/
+analytics/LOGBATTEST_backup_13_02_2026/
+analytics/LOGBATTEST_backup_28_01_2026/
+analytics/ul18_12_unit2/
+analytics/Backup/
+analytics/exports/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+env/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
