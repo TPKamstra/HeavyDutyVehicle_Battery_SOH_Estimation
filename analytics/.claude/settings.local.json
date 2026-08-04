@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\TPKam\\\\Documents\\\\BatPi_Download\\\\LOGBATTEST_Complete\" | Sort-Object Name | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\TPKam\\\\Documents\\\\BatPi_Download\\\\LOGBATTEST_Complete\" | ForEach-Object { $_.Name } | Select-String \"DegradationCycle\" | ForEach-Object { $_.ToString\\(\\) } | Sort-Object -Unique | Select-Object -First 80)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\TPKam\\\\Documents\\\\BatPi_Download\\\\LOGBATTEST_Complete\" | ForEach-Object { $_.Name } | ForEach-Object { if \\($_ -match \"DegradationCycle_\\(\\\\d+\\)_\"\\) { $Matches[1] } } | Sort-Object -Unique)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\TPKam\\\\Documents\\\\BatPi_Download\\\\LOGBATTEST_Complete\" | ForEach-Object { $_.Name } | ForEach-Object { if \\($_ -match \"\\(\\\\d{4}-\\\\d{2}-\\\\d{2}_\\\\d{2}-\\\\d{2}-\\\\d{2}\\)\"\\) { $Matches[1] } } | Sort-Object -Unique)",
+      "PowerShell(python -c \"import numpy, pandas, scipy, matplotlib; print\\('OK'\\)\")",
+      "PowerShell(pip install scipy --quiet)",
+      "PowerShell(python -c \"import numpy, pandas, scipy, matplotlib; print\\('All OK'\\)\")",
+      "PowerShell(pip install scipy 2>&1)",
+      "Bash(Select-String \"bdps\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('battery_feature_dashboard.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import openpyxl; print\\('openpyxl', openpyxl.__version__\\); import kaleido; print\\('kaleido OK'\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -m pip install openpyxl kaleido)",
+      "Bash(python -m python -c \"from openpyxl import load_workbook; import plotly.io as pio; print\\('OK'\\)\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(python -c \"from openpyxl import load_workbook; from openpyxl.styles import Font, PatternFill, Alignment; from openpyxl.utils import get_column_letter; import plotly.io as pio; print\\('All export dependencies OK'\\)\")",
+      "Bash(python -m pip install \"kaleido==0.2.1\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('battery_feature_dashboard.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+    ]
+  }
+}

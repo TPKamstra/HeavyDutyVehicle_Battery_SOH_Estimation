@@ -1,0 +1,381 @@
+cycle,step,description,current_A,voltage_V,duration_min,mode
+1,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+1,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+2,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+2,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+3,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+3,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+4,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+4,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+5,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+5,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+6,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+6,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+7,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+7,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+8,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+8,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+9,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+9,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+10,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+10,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+11,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+12,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+12,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+13,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+13,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+14,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+14,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+15,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+15,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+16,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+16,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+17,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+17,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+18,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+18,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+19,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+19,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+20,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+20,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+21,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+21,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+22,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+23,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+23,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+24,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+24,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+25,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+25,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+26,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+26,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+27,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+27,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+28,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+28,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+29,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+29,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+30,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+30,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+31,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+31,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+32,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+32,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+33,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+34,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+34,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+35,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+35,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+36,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+36,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+37,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+37,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+38,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+38,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+39,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+39,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+40,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+40,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+41,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+41,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+42,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+42,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+43,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+43,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+44,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+45,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+45,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+46,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+46,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+47,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+47,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+48,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+48,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+49,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+49,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+50,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+50,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+51,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+51,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+52,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+52,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+53,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+53,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+54,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+54,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+55,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+56,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+56,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+57,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+57,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+58,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+58,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+59,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+59,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+60,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+60,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+61,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+61,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+62,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+62,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+63,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+63,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+64,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+64,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+65,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+65,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+66,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+67,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+67,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+68,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+68,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+69,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+69,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+70,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+70,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+71,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+71,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+72,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+72,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+73,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+73,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+74,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+74,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+75,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+75,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+76,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+76,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+77,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+78,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+78,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+79,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+79,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+80,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+80,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+81,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+81,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+82,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+82,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+83,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+83,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+84,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+84,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+85,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+85,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+86,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+86,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+87,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+87,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+88,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+89,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+89,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+90,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+90,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+91,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+91,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+92,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+92,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+93,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+93,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+94,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+94,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+95,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+95,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+96,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+96,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+97,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+97,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+98,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+98,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+99,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+100,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+100,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+101,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+101,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+102,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+102,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+103,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+103,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+104,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+104,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+105,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+105,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+106,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+106,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+107,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+107,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+108,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+108,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+109,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+109,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+110,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+111,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+111,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+112,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+112,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+113,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+113,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+114,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+114,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+115,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+115,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+116,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+116,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+117,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+117,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+118,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+118,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+119,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+119,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+120,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+120,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+121,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+122,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+122,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+123,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+123,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+124,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+124,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+125,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+125,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+126,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+126,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+127,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+127,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+128,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+128,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+129,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+129,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+130,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+130,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+131,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+131,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+132,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+133,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+133,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+134,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+134,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+135,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+135,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+136,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+136,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+137,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+137,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+138,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+138,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+139,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+139,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+140,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+140,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+141,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+141,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+142,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+142,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+143,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+144,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+144,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+145,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+145,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+146,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+146,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+147,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+147,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+148,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+148,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+149,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+149,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+150,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+150,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+151,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+151,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+152,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+152,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+153,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+153,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+154,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+155,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+155,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+156,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+156,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+157,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+157,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+158,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+158,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+159,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+159,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+160,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+160,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+161,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+161,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+162,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+162,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+163,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+163,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+164,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+164,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+165,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+166,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+166,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+167,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+167,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+168,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+168,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+169,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+169,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+170,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+170,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+171,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+171,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+172,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+172,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+173,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+173,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+174,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+174,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+175,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+175,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+176,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+177,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+177,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+178,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+178,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+179,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+179,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+180,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+180,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+181,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+181,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+182,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+182,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+183,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+183,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+184,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+184,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+185,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+185,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+186,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+186,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+187,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+188,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+188,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+189,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+189,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+190,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+190,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+191,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+191,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+192,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+192,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+193,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+193,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+194,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+194,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+195,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+195,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+196,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+196,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+197,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+197,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
+198,soh_check,Full discharge test at 1.8A (C/10),1.8,,,soh_check
+199,discharge,Discharge battery at 28.0A to 1.60V/cell for 20 min,28.0,1.6,20.0,discharge
+199,charge,Charge battery at 14.4V @ 5.4A for 3 hours (CV),5.4,14.4,180.0,charge
