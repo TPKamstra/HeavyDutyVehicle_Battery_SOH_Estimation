@@ -1,14 +1,231 @@
-\documentclass{article}
-\usepackage{graphicx} % Required for inserting images
+% ============================================================
+% SOH Estimation for High-Current Starter Batteries in
+% Heavy-Duty Diesel Vehicles: Lab-to-Field Validation
+% ------------------------------------------------------------
+% Draft generated for Overleaf (IEEEtran conference format).
+% Sections included: Introduction, Related Work, Methodology.
+% Results/Discussion/Conclusion are left as marked placeholders
+% ("room for the results") for you to fill in once the CAN-bus
+% validation is complete.
+%
+% NOTE ON REFERENCES: bibliographic entries below were assembled
+% from search snippets/abstracts (full-text metadata pages were
+% not accessible). Please verify author names, exact year, and
+% volume/page numbers against the original sources before
+% submission.
+% ============================================================
 
-\title{HeavyDutyVehicle_Battery_SOH_Estimation}
-\author{Tom Kamstra}
-\date{August 2026}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+
+% Simple TODO helper for placeholders you still need to fill in
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 
 \begin{document}
 
+\title{Lab-to-Field Validation of State-of-Health Estimation Features for High-Current Starter Batteries in Heavy-Duty Diesel Vehicles\\
+\todo{finalize title once results are in --- consider adding a subtitle naming the feature type, e.g. ``via Cranking-Event Feature Extraction''}}
+
+\author{
+\IEEEauthorblockN{\todo{Author name(s)}}
+\IEEEauthorblockA{\todo{Affiliation, department, institution, city, country}\\
+\todo{email@institution.example}}
+}
+
 \maketitle
 
+\begin{abstract}
+\todo{Write abstract last. One-paragraph summary: (1) problem --- heavy-duty diesel vehicles depend on starter batteries capable of sustained high-current cranking, and their gradual degradation is difficult to detect before failure; (2) approach --- a controlled laboratory aging campaign spanning ten realistic test days at different states of charge (SoC) is used to identify state-of-health (SOH) indicating features from cranking-event data, which are then evaluated against field CAN-bus data recorded on operational vehicles; (3) contribution --- an assessment of whether lab-derived SOH features generalize to real-world operating conditions; (4) headline result --- \todo{fill in once available}.}
+\end{abstract}
+
+\begin{IEEEkeywords}
+state of health, lead-acid battery, AGM battery, starter battery, cranking current, CAN bus, heavy-duty vehicle, diesel engine, battery aging, lab-to-field validation
+\end{IEEEkeywords}
+
+% ============================================================
 \section{Introduction}
+% ============================================================
+
+Heavy-duty diesel vehicles rely on a starter battery capable of delivering several hundred amperes for a short but critical interval each time the engine is started. Compared to light-duty passenger vehicles, these platforms typically combine larger-displacement, higher-compression diesel engines with harsher duty cycles: long idle periods interspersed with mission-critical starts, wide ambient temperature ranges, and vibration and shock loads that accelerate mechanical wear inside the battery. A failed or marginal start is not merely an inconvenience in this context --- for fleet operators, emergency services, and other applications where the vehicle must be available on demand, an unexpected failure to crank can take an entire asset out of service at the worst possible moment. \todo{if the paper is meant to stay anchored to the armoured-vehicle motivating case in the introduction, add one sentence here noting that armoured/military heavy-duty vehicles are a representative and demanding example of this vehicle class, without going into vehicle-specific detail}
+
+State-of-health (SOH) estimation aims to quantify the remaining capability of a battery --- typically expressed relative to its capacity or cranking-current capability when new --- so that a degrading battery can be flagged and replaced before it fails to start the vehicle. For starter batteries specifically, SOH is commonly inferred from the voltage response during a cranking event: the depth of the voltage dip when the starter motor draws current, the shape of the voltage recovery afterward, and derived quantities such as internal resistance all change measurably as the battery ages~\cite{hyun_cranking_soh,ieee_automotive_soh,stepresponse_soh}. These cranking-voltage-based methods are attractive because they require no additional current sensor and can, in principle, be implemented using signals already available on the vehicle's data bus.
+
+However, most published SOH estimation methods for lead-acid and AGM starter batteries are developed and validated under controlled laboratory conditions: a single battery (or small batch) is aged on a bench under a scripted, repeatable protocol, and the resulting features are correlated against a reference SOH measurement obtained under the same controlled conditions~\cite{lead_acid_impedance_aging,eis_soh_timedep,ruetschi_aging}. Laboratory aging protocols are valuable because they allow SOH to be tracked against a trustworthy ground truth and because operating conditions --- temperature, load profile, SoC at the time of cranking --- can be swept systematically. What they cannot fully capture is the variability of real-world use: field batteries experience unscripted combinations of temperature, partial charge history, and load that are difficult to reproduce exactly on a bench. Recent work on electric-vehicle traction batteries has shown that this laboratory-to-field gap is real and non-trivial: models and features that perform well on laboratory cycling data can degrade substantially when applied to field data, because field data is noisier, less regularly sampled, and subject to a much wider range of operating conditions than laboratory data~\cite{labfield_gap,transferable_capacity_estimation,multimodal_ev_field}. To date, this transferability question has been studied primarily for lithium-ion traction batteries in electric vehicles. Whether the same gap exists --- and how large it is --- for lead-acid/AGM \emph{starter} batteries under high-current cranking loads in heavy-duty diesel vehicles is, to the best of our knowledge, not well documented in the literature.
+
+This paper addresses that gap directly. We combine two complementary data sources:
+
+\begin{enumerate}
+\item \textbf{A controlled laboratory aging campaign.} A battery of the same type used in the target vehicle class is degraded on an automated test bench (built around a Raspberry Pi controller) through ten realistic test days, each exercising the battery at a different operating state of charge. Cranking-event and cycling data recorded during these test days are used to derive a set of candidate SOH-indicating features together with a reference SOH trajectory for the battery under test.
+\item \textbf{Field CAN-bus data from operational vehicles.} Cranking-event data recorded via the vehicle CAN bus during real-world engine starts on in-service heavy-duty diesel vehicles is used as an independent field dataset, against which the laboratory-derived features are re-evaluated.
+\end{enumerate}
+
+By applying the same feature-extraction pipeline to both datasets, we assess the extent to which SOH-indicating features identified under controlled laboratory conditions carry over to field conditions, and where they diverge. \todo{Add one sentence stating the paper's generalized scope explicitly, e.g.: ``While the field dataset used in this study originates from armoured heavy-duty vehicles operated by [organization], the vehicle class, engine type, and battery technology are representative of heavy-duty diesel vehicles generally, and the results are presented and discussed at that level of generality.'' Adjust wording depending on what can be disclosed.}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:related} reviews prior work on cranking-voltage and impedance-based SOH estimation, lead-acid aging mechanisms, and the emerging literature on the laboratory-to-field generalization gap for battery health estimation. Section~\ref{sec:method} describes the laboratory test bench, the design of the ten SoC-sweeping test days, the feature-extraction pipeline, and the procedure used to evaluate the resulting features against the field CAN-bus dataset. Section~\ref{sec:results} presents the laboratory and field results \todo{once available}, Section~\ref{sec:discussion} discusses the implications for feature transferability, and Section~\ref{sec:conclusion} concludes the paper.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+% ============================================================
+
+\subsection{Cranking-Voltage and Impedance-Based SOH Estimation}
+
+A substantial body of work estimates lead-acid/AGM battery SOH from the voltage signature recorded during an engine-cranking event. Hyun et al.\ propose a SOH estimation system for lead-acid car batteries based on monitoring the cranking voltage waveform, extracting critical voltage points from the response and relating them to battery health without requiring a dedicated current sensor~\cite{hyun_cranking_soh}. Related automotive monitoring systems similarly process terminal voltage during cranking to issue early warnings of impending starting failure~\cite{ieee_automotive_soh}. A complementary line of work uses a step-response model together with in-situ vehicle data to estimate SOH from the battery's dynamic response to a load step, which is conceptually close to a cranking event but framed in terms of an identified equivalent-circuit model rather than raw voltage features~\cite{stepresponse_soh}.
+
+Impedance-based methods form a second major family. AC impedance (commonly measured near 1~kHz) increases as a lead-acid battery ages due to sulfation, active-material degradation, and grid corrosion, and has been used both as a direct SOH indicator and as a way to validate voltage- or current-based features against an independent physical measurement~\cite{lead_acid_impedance_aging,eis_soh_timedep}. Some laboratory protocols combine impedance measurements taken at two distinct states of charge (e.g., full charge and 75\% SoC) to predict remaining battery lifetime with good accuracy~\cite{eis_soh_timedep}, which is directly relevant to the SoC-sweeping design used in this paper's laboratory campaign (Section~\ref{sec:method}).
+
+\subsection{Lead-Acid Battery Aging Mechanisms and SoC Dependence}
+
+The dominant aging mechanisms of lead-acid batteries --- grid and post corrosion, degradation and loss of adherence of the positive active mass, irreversible sulfation, internal short circuits, and water loss --- are well characterized in the foundational review by Ruetschi~\cite{ruetschi_aging}. Of particular relevance to this work, several of these mechanisms are strongly state-of-charge dependent: increasing depth-of-discharge during cycling accelerates positive active-mass degradation, and cumulative time spent at low SoC (commonly cited around SoC~$<$~35\%) is itself an aging stress factor, independent of the number of cycles performed~\cite{ruetschi_aging,lead_acid_impedance_aging}. This motivates deliberately sampling multiple SoC operating points --- rather than aging the battery at a single fixed SoC --- when designing a laboratory campaign intended to produce features that remain valid across the SoC range a starter battery actually experiences in the field.
+
+\subsection{Field-Data-Driven and Machine-Learning SOH Estimation}
+
+Outside the lead-acid/starter-battery domain, a large and fast-growing literature addresses SOH estimation for lithium-ion traction batteries using field data collected from electric vehicles, typically via onboard telematics or CAN-bus logging. Health indicators are extracted from charging-phase voltage/current/temperature time series and fed to models ranging from Gaussian process regression to CNNs, RNNs, and LSTMs~\cite{multimodal_ev_field,domain_ml_soh}. Recent studies report that models trained on a single fleet or dataset generalize poorly to other vehicles or fleets, motivating transfer-learning and domain-adaptation approaches that explicitly try to bridge differences between training and deployment distributions~\cite{robust_soh_buses,transferable_capacity_estimation}.
+
+Most relevant to the present paper is a recent and still-limited strand of work that studies the laboratory-to-field gap explicitly, rather than working with laboratory or field data in isolation. This work argues that laboratory cycling protocols use predefined, temperature-controlled conditions that do not reflect the partial charging/discharging, variable load, and calendar-aging effects seen in real-world operation, and that SOH algorithms tuned on laboratory data can consequently underperform when applied to field data~\cite{labfield_gap,transferable_capacity_estimation}. These studies are, however, concentrated on lithium-ion EV traction batteries. To the best of our knowledge, no prior work has directly evaluated whether cranking-based SOH features derived from a controlled laboratory aging campaign transfer to field CAN-bus data recorded on high-current starter batteries in heavy-duty diesel vehicles. This is the gap addressed in the present paper.
+
+\subsection{Battery Monitoring in Heavy-Duty and Military Vehicle Contexts}
+
+Industry and trade literature on heavy-duty and military ground vehicles consistently identifies starter-battery reliability as an operational concern: engine starting is described as a primary, safety- and mission-critical function of the vehicle battery, and low temperatures are noted to compound the problem by simultaneously reducing available battery current and increasing the current required to crank the engine~\cite{milembedded_battery,stryten_military}. Without a dedicated battery-health monitor, assessing the state of charge or health of a conventional lead-acid battery in these fleets is frequently described as guesswork, with the most common failure mode being a progressive increase in internal resistance and corresponding loss of cranking capability~\cite{milembedded_battery}. This grey literature underscores the practical motivation for the present study but, being non-peer-reviewed and largely vendor-authored, does not provide a validated feature set or a lab-to-field comparison of the kind developed here.
+
+% ============================================================
+\section{Methodology}
+\label{sec:method}
+% ============================================================
+
+The methodology consists of two stages that share a common feature-extraction pipeline: (1) a controlled laboratory aging campaign that induces realistic degradation in a representative battery and produces a labeled feature/SOH dataset, and (2) a field-validation stage in which the same features are extracted from CAN-bus data recorded on operational heavy-duty diesel vehicles and compared against the laboratory findings. Fig.~\ref{fig:overview} \todo{add an overview figure showing: lab rig -> feature extraction -> lab feature/SOH dataset; vehicle fleet -> CAN logging -> field feature dataset; both feeding into a shared comparison/validation step} summarizes this pipeline.
+
+\subsection{Battery Under Test}
+\label{sec:battery}
+
+The laboratory campaign uses a battery of the same make, model, and technology (\todo{lead-acid / AGM / EFB --- specify}) as installed in the target heavy-duty diesel vehicle class, rated for \todo{cold-cranking amps (CCA) rating} and \todo{nominal capacity, e.g. Ah} at \todo{nominal voltage, e.g. 12~V / 24~V}. Using a production battery of the vehicle's own type, rather than a generic reference cell, is intended to keep the cranking-current demand, internal resistance, and aging behavior representative of what is actually observed on the vehicle CAN bus during field validation.
+
+\subsection{Laboratory Test Bench}
+\label{sec:testbench}
+
+The test bench is built around a Raspberry Pi, which sequences the charge/discharge/cranking-pulse profile for each test day, switches the electrical loads used to emulate a high-current starter draw, and logs voltage, current, and temperature at \todo{sampling rate, e.g. X~kHz during cranking pulses / Y~Hz otherwise}. \todo{Briefly describe the physical setup: power supply / programmable load / relay or MOSFET switching used to emulate the starter-motor current pulse; any temperature control or monitoring; how "cranking" is emulated (real starter motor and flywheel load vs. programmable electronic load approximating the current profile).} All raw logs from the bench are timestamped and stored for offline processing by the analytics pipeline described in Section~\ref{sec:features}.
+
+\subsection{Design of the Ten Test Days}
+\label{sec:testdays}
+
+Rather than aging the battery under a single fixed condition, the campaign is organized into ten test days, each representing one realistic day of vehicle operation but performed at a different operating state of charge. This design is motivated by the SoC-dependent aging mechanisms discussed in Section~\ref{sec:related}: because both the electrochemical aging rate and the electrical behavior of the battery during a cranking event depend on SoC, features that are only characterized at a single SoC risk failing to generalize across the SoC range the battery actually experiences on the vehicle. Table~\ref{tab:testdays} \todo{fill in table: test-day number, target SoC, ambient temperature (if varied), number of cranking pulses performed, any other varied parameter} summarizes the SoC setpoint and other conditions used for each of the ten test days.
+
+\begin{table}[t]
+\centering
+\caption{Overview of the ten laboratory test days \todo{fill in values}}
+\label{tab:testdays}
+\begin{tabular}{c c c c}
+\hline
+\textbf{Day} & \textbf{Target SoC (\%)} & \textbf{Temp.} & \textbf{Cranking pulses} \\
+\hline
+1  & \todo{} & \todo{} & \todo{} \\
+2  & \todo{} & \todo{} & \todo{} \\
+$\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ \\
+10 & \todo{} & \todo{} & \todo{} \\
+\hline
+\end{tabular}
+\end{table}
+
+Each test day is designed to be ``realistic'' in the sense that the sequence of loads, rest periods, and cranking events approximates a plausible operational day for the target vehicle (\todo{describe what makes a day ``realistic,'' e.g. based on observed field usage patterns, number of starts per day, parasitic loads during rest, etc.}), rather than a synthetic worst-case or best-case cycle. Across the full campaign, the battery is degraded incrementally, and a reference SOH value is established for the battery at the time of each test day using \todo{describe reference/ground-truth SOH measurement, e.g. capacity test, reference impedance measurement, or manufacturer-style CCA test}.
+
+\subsection{Feature Extraction and Analytics Pipeline}
+\label{sec:features}
+
+For every cranking event recorded on the bench, a common analytics pipeline extracts a set of candidate SOH-indicating features from the voltage (and, where available, current) waveform. Candidate feature categories include, but are not limited to:
+
+\begin{itemize}
+\item \textbf{Minimum cranking voltage} --- the depth of the voltage dip at the onset of cranking.
+\item \textbf{Voltage recovery dynamics} --- the slope and/or time constant of the voltage recovery immediately following the current draw.
+\item \textbf{Estimated internal resistance} --- derived from the voltage drop relative to the (known or estimated) current draw.
+\item \textbf{Frequency-domain features} --- e.g., FFT-based descriptors of the cranking voltage transient.
+\item \textbf{Rest-voltage / pre-crank features} --- open-circuit or lightly loaded voltage immediately before cranking, used as an SoC- and temperature-context feature for the other measurements.
+\end{itemize}
+
+\todo{Replace/refine this list with the exact feature set implemented in your analytics code, including formulas or references to the specific signal-processing steps used (e.g. filter type/order for the FFT-based feature, window length for the recovery-slope fit, etc.).} The same pipeline, unmodified, is later applied to the field CAN-bus data (Section~\ref{sec:fielddata}), so that any difference in feature behavior between the two datasets can be attributed to the data itself rather than to differences in how features are computed.
+
+\subsection{Field Data Acquisition via CAN Bus}
+\label{sec:fielddata}
+
+To evaluate whether the laboratory-derived features generalize beyond the bench, cranking-event data is additionally collected from the CAN bus of operational heavy-duty diesel vehicles during normal engine-start events. \todo{Describe: which CAN signals are available (battery voltage, current if metered, starter-relay/engine-state signal used to detect the start of a cranking event, temperature if available); native CAN sampling rate/resolution; number of vehicles and approximate number of start events collected; how start events are automatically identified/segmented from the raw CAN log; and any known differences between the field signal set and what was directly measured on the bench (e.g., no dedicated current sensor on the vehicle, lower voltage sampling rate, etc.), since these differences are themselves relevant to interpreting the validation results.}
+
+\subsection{Lab-to-Field Validation Procedure}
+\label{sec:validation}
+
+The validation procedure applies the feature-extraction pipeline of Section~\ref{sec:features} identically to (i) the laboratory cranking events, labeled with the reference SOH established for each test day, and (ii) the field CAN-bus cranking events extracted as described in Section~\ref{sec:fielddata}. \todo{Describe the comparison methodology to be used, for example: (a) checking whether feature trends observed as a function of laboratory-aged SOH are also observed as a function of field vehicle age/mileage/known maintenance events; (b) checking whether the SoC-dependence of each feature identified in the lab (Section~\ref{sec:testdays}) is reproduced in field data spanning a similar SoC range; (c) any available field ground truth against which absolute SOH estimates can be checked, versus a purely relative/trend-based comparison if no field ground truth exists.} The outcome of this procedure is a per-feature assessment of laboratory-to-field transferability, reported in Section~\ref{sec:results}.
+
+% ============================================================
+\section{Results}
+\label{sec:results}
+% ============================================================
+
+\todo{RESULTS PLACEHOLDER --- this section is intentionally left for you to complete once the lab feature analysis and CAN-bus field comparison are done. Suggested structure: (5.1) Laboratory results --- feature behavior vs.\ SoC and vs.\ reference SOH across the ten test days; (5.2) Field results --- the same features computed from CAN-bus data, e.g. distributions across the fleet or trends vs.\ vehicle age/mileage; (5.3) Lab-vs-field comparison --- which features transferred well, which did not, and any hypothesis for why (e.g. missing current sensor on the vehicle, different sampling rate, temperature range not covered in the lab).}
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% ============================================================
+
+\todo{DISCUSSION PLACEHOLDER --- interpret the results above: what do they imply about the reliability of lab-only SOH feature development for this battery/vehicle class; practical recommendations for deployment (e.g. which features are safe to use on-vehicle given available CAN signals); limitations (single battery/battery type, number of field vehicles, duration of field observation, absence of field ground-truth SOH, etc.); and directions for future work (e.g. expanding the field dataset, adding a current sensor to a subset of vehicles, testing additional battery units in the lab).}
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ============================================================
+
+\todo{CONCLUSION PLACEHOLDER --- 3--5 sentences restating the problem, what was done, the headline finding on lab-to-field transferability, and the practical takeaway for SOH monitoring of high-current starter batteries in heavy-duty diesel vehicles.}
+
+% ============================================================
+% Bibliography
+% NOTE: verify all entries (authors, year, venue, pages) before
+% submission -- assembled from search snippets, not full text.
+% ============================================================
+\begin{thebibliography}{00}
+
+\bibitem{hyun_cranking_soh}
+Hyun \emph{et al.}, ``State of Health Estimation System for Lead-Acid Car Batteries Through Cranking Voltage Monitoring,'' \todo{venue/thesis institution, year}. [Online]. Available: \url{https://vtechworks.lib.vt.edu/items/639256f6-630b-4465-a186-0fd15cfa0eb3}
+
+\bibitem{ieee_automotive_soh}
+``Automotive lead-acid battery state-of-health monitoring system,'' \todo{authors, conference name, year}, IEEE. [Online]. Available: \url{https://ieeexplore.ieee.org/document/7392714/}
+
+\bibitem{stepresponse_soh}
+``Model-based state of health estimation of a lead-acid battery using step-response and emulated in-situ vehicle data,'' \todo{authors, journal, year}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S2352152X21001146}
+
+\bibitem{lead_acid_impedance_aging}
+``Effect of ageing on the impedance of the lead-acid battery,'' \todo{authors, journal, year}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S2352152X21001390}
+
+\bibitem{eis_soh_timedep}
+``Time-dependent analysis of the state-of-health for lead-acid batteries: An EIS study,'' \todo{authors, journal, 2018}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S2352152X18303712}
+
+\bibitem{ruetschi_aging}
+P.~Ruetschi, ``Aging mechanisms and service life of lead-acid batteries,'' \emph{Journal of Power Sources}, vol.~127, pp.~33--44, 2004.
+
+\bibitem{labfield_gap}
+``Lab-to-field gap in battery aging studies: Mismatch of operating conditions between laboratory environments and real-world automotive applications,'' \todo{authors, journal, 2025}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/pii/S2590116825001250}
+
+\bibitem{transferable_capacity_estimation}
+``Transferable data-driven capacity estimation for lithium-ion batteries with deep learning: A case study from laboratory to field applications,'' \todo{authors, journal, 2023}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S030626192301111X}
+
+\bibitem{multimodal_ev_field}
+``Multi-modal framework for battery state of health evaluation using open-source electric vehicle data,'' \todo{authors, journal, 2024/2025}. [Online]. Available: \url{https://pmc.ncbi.nlm.nih.gov/articles/PMC11779878/}
+
+\bibitem{domain_ml_soh}
+``Domain knowledge-guided machine learning framework for state of health estimation in Lithium-ion batteries,'' \emph{Communications Engineering}, \todo{authors, 2024}. [Online]. Available: \url{https://www.nature.com/articles/s44172-024-00304-2}
+
+\bibitem{robust_soh_buses}
+``Robust SOH estimation for Li-ion battery packs of real-world electric buses with charging segments,'' \emph{Scientific Reports}, \todo{authors, 2025}. [Online]. Available: \url{https://www.nature.com/articles/s41598-025-09108-6}
+
+\bibitem{milembedded_battery}
+``The battery's role in the evolving military ground vehicle,'' \emph{Military Embedded Systems}. [Online]. Available: \url{https://militaryembedded.com/comms/vetronics/the-batterys-role-in-the-evolving-military-ground-vehicle}
+
+\bibitem{stryten_military}
+``Power and Cycle Life for Batteries in Military Vehicles,'' Stryten Energy. [Online]. Available: \url{https://www.stryten.com/power-and-cycle-life-for-batteries-in-military-vehicles/}
+
+\end{thebibliography}
 
 \end{document}
