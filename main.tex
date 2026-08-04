@@ -8,11 +8,14 @@
 % ("room for the results") for you to fill in once the CAN-bus
 % validation is complete.
 %
-% NOTE ON REFERENCES: bibliographic entries below were assembled
-% from search snippets/abstracts (full-text metadata pages were
-% not accessible). Please verify author names, exact year, and
-% volume/page numbers against the original sources before
-% submission.
+% NOTE ON REFERENCES: this draft now cites a mix of (a) items
+% confirmed in your Zotero library, cited with author+year keys
+% (e.g. kerley2015, noura2020) that are expected to match a
+% Better-BibTeX-style export, and (b) additional sources found via
+% web search that are not in your Zotero library, collected in
+% references.bib in this repo. See the bibliography section at the
+% end of this file for the \bibliography{} call and a TODO on
+% confirming the exact Zotero export filename/citekey format.
 % ============================================================
 
 \documentclass[conference]{IEEEtran}
@@ -54,7 +57,7 @@ state of health, lead-acid battery, AGM battery, starter battery, cranking curre
 
 Heavy-duty diesel vehicles rely on a starter battery capable of delivering several hundred amperes for a short but critical interval each time the engine is started. Compared to light-duty passenger vehicles, these platforms typically combine larger-displacement, higher-compression diesel engines with harsher duty cycles: long idle periods interspersed with mission-critical starts, wide ambient temperature ranges, and vibration and shock loads that accelerate mechanical wear inside the battery. A failed or marginal start is not merely an inconvenience in this context --- for fleet operators, emergency services, and other applications where the vehicle must be available on demand, an unexpected failure to crank can take an entire asset out of service at the worst possible moment. \todo{if the paper is meant to stay anchored to the armoured-vehicle motivating case in the introduction, add one sentence here noting that armoured/military heavy-duty vehicles are a representative and demanding example of this vehicle class, without going into vehicle-specific detail}
 
-State-of-health (SOH) estimation aims to quantify the remaining capability of a battery --- typically expressed relative to its capacity or cranking-current capability when new --- so that a degrading battery can be flagged and replaced before it fails to start the vehicle. For starter batteries specifically, SOH is commonly inferred from the voltage response during a cranking event: the depth of the voltage dip when the starter motor draws current, the shape of the voltage recovery afterward, and derived quantities such as internal resistance all change measurably as the battery ages~\cite{hyun_cranking_soh,ieee_automotive_soh,stepresponse_soh}. These cranking-voltage-based methods are attractive because they require no additional current sensor and can, in principle, be implemented using signals already available on the vehicle's data bus.
+State-of-health (SOH) estimation aims to quantify the remaining capability of a battery --- typically expressed relative to its capacity or cranking-current capability when new --- so that a degrading battery can be flagged and replaced before it fails to start the vehicle. For starter batteries specifically, SOH is commonly inferred from the voltage response during a cranking event: the depth of the voltage dip when the starter motor draws current, the shape of the voltage recovery afterward, and derived quantities such as internal resistance all change measurably as the battery ages~\cite{kerley2015,stepresponse_soh}. These cranking-voltage-based methods are attractive because they require no additional current sensor and can, in principle, be implemented using signals already available on the vehicle's data bus.
 
 However, most published SOH estimation methods for lead-acid and AGM starter batteries are developed and validated under controlled laboratory conditions: a single battery (or small batch) is aged on a bench under a scripted, repeatable protocol, and the resulting features are correlated against a reference SOH measurement obtained under the same controlled conditions~\cite{lead_acid_impedance_aging,eis_soh_timedep,ruetschi_aging}. Laboratory aging protocols are valuable because they allow SOH to be tracked against a trustworthy ground truth and because operating conditions --- temperature, load profile, SoC at the time of cranking --- can be swept systematically. What they cannot fully capture is the variability of real-world use: field batteries experience unscripted combinations of temperature, partial charge history, and load that are difficult to reproduce exactly on a bench. Recent work on electric-vehicle traction batteries has shown that this laboratory-to-field gap is real and non-trivial: models and features that perform well on laboratory cycling data can degrade substantially when applied to field data, because field data is noisier, less regularly sampled, and subject to a much wider range of operating conditions than laboratory data~\cite{labfield_gap,transferable_capacity_estimation,multimodal_ev_field}. To date, this transferability question has been studied primarily for lithium-ion traction batteries in electric vehicles. Whether the same gap exists --- and how large it is --- for lead-acid/AGM \emph{starter} batteries under high-current cranking loads in heavy-duty diesel vehicles is, to the best of our knowledge, not well documented in the literature.
 
@@ -76,13 +79,13 @@ The remainder of this paper is organized as follows. Section~\ref{sec:related} r
 
 \subsection{Cranking-Voltage and Impedance-Based SOH Estimation}
 
-A substantial body of work estimates lead-acid/AGM battery SOH from the voltage signature recorded during an engine-cranking event. Hyun et al.\ propose a SOH estimation system for lead-acid car batteries based on monitoring the cranking voltage waveform, extracting critical voltage points from the response and relating them to battery health without requiring a dedicated current sensor~\cite{hyun_cranking_soh}. Related automotive monitoring systems similarly process terminal voltage during cranking to issue early warnings of impending starting failure~\cite{ieee_automotive_soh}. A complementary line of work uses a step-response model together with in-situ vehicle data to estimate SOH from the battery's dynamic response to a load step, which is conceptually close to a cranking event but framed in terms of an identified equivalent-circuit model rather than raw voltage features~\cite{stepresponse_soh}.
+A substantial body of work estimates lead-acid/AGM battery SOH from the voltage signature recorded during an engine-cranking event; see~\cite{noura2020} and~\cite{kim2025} for recent reviews of the broader SOH estimation landscape. Kerley, Hyun, and Ha propose a SOH monitoring system for lead-acid car batteries based on the cranking voltage waveform, extracting critical voltage points from the response and relating them to battery health without requiring a dedicated current sensor~\cite{kerley2015}. A parity-relation-based approach has also been proposed for automotive battery SOH monitoring, comparing the observed charging excitation voltage against a model-predicted value to flag degradation~\cite{zhang2012}. A complementary line of work uses a step-response model together with in-situ vehicle data to estimate SOH from the battery's dynamic response to a load step, which is conceptually close to a cranking event but framed in terms of an identified equivalent-circuit model rather than raw voltage features~\cite{stepresponse_soh}; dynamic lead-acid battery models built directly from manufacturer discharge-curve data offer a related, lower-effort route to a similar equivalent-circuit representation~\cite{medora2005}.
 
-Impedance-based methods form a second major family. AC impedance (commonly measured near 1~kHz) increases as a lead-acid battery ages due to sulfation, active-material degradation, and grid corrosion, and has been used both as a direct SOH indicator and as a way to validate voltage- or current-based features against an independent physical measurement~\cite{lead_acid_impedance_aging,eis_soh_timedep}. Some laboratory protocols combine impedance measurements taken at two distinct states of charge (e.g., full charge and 75\% SoC) to predict remaining battery lifetime with good accuracy~\cite{eis_soh_timedep}, which is directly relevant to the SoC-sweeping design used in this paper's laboratory campaign (Section~\ref{sec:method}).
+Impedance-based methods form a second major family. AC impedance (commonly measured near 1~kHz) increases as a lead-acid battery ages due to sulfation, active-material degradation, and grid corrosion, and has been used both as a direct SOH indicator and as a way to validate voltage- or current-based features against an independent physical measurement~\cite{lead_acid_impedance_aging,eis_soh_timedep,tairov2011}. For lead-acid chemistries specifically, EIS has also been used to assess SOH in the context of second-life applications~\cite{mohsin2022}. Some laboratory protocols combine impedance measurements taken at two distinct states of charge (e.g., full charge and 75\% SoC) to predict remaining battery lifetime with good accuracy~\cite{eis_soh_timedep}, which is directly relevant to the SoC-sweeping design used in this paper's laboratory campaign (Section~\ref{sec:method}).
 
 \subsection{Lead-Acid Battery Aging Mechanisms and SoC Dependence}
 
-The dominant aging mechanisms of lead-acid batteries --- grid and post corrosion, degradation and loss of adherence of the positive active mass, irreversible sulfation, internal short circuits, and water loss --- are well characterized in the foundational review by Ruetschi~\cite{ruetschi_aging}. Of particular relevance to this work, several of these mechanisms are strongly state-of-charge dependent: increasing depth-of-discharge during cycling accelerates positive active-mass degradation, and cumulative time spent at low SoC (commonly cited around SoC~$<$~35\%) is itself an aging stress factor, independent of the number of cycles performed~\cite{ruetschi_aging,lead_acid_impedance_aging}. This motivates deliberately sampling multiple SoC operating points --- rather than aging the battery at a single fixed SoC --- when designing a laboratory campaign intended to produce features that remain valid across the SoC range a starter battery actually experiences in the field.
+The dominant aging mechanisms of lead-acid batteries --- grid and post corrosion, degradation and loss of adherence of the positive active mass, irreversible sulfation, internal short circuits, and water loss --- are well characterized in the foundational review by Ruetschi~\cite{ruetschi_aging}. Of particular relevance to this work, several of these mechanisms are strongly state-of-charge dependent: increasing depth-of-discharge during cycling accelerates positive active-mass degradation, and cumulative time spent at low SoC (commonly cited around SoC~$<$~35\%) is itself an aging stress factor, independent of the number of cycles performed~\cite{ruetschi_aging,lead_acid_impedance_aging}. This motivates deliberately sampling multiple SoC operating points --- rather than aging the battery at a single fixed SoC --- when designing a laboratory campaign intended to produce features that remain valid across the SoC range a starter battery actually experiences in the field. Beyond electrochemical stressors, heavy-duty and off-road duty cycles also subject the battery to sustained vibration and shock loading, separately shown to accelerate lead-acid degradation through plate and grid damage~\cite{he2014} --- a further reason to age the battery under a realistic, vehicle-representative test-day protocol rather than a purely electrical bench cycle. Hybrid lead-acid/lithium-ion energy-storage architectures, in which a smaller lithium-ion buffer absorbs high-current transients to reduce cycling stress on the lead-acid unit, have also been proposed for transport applications~\cite{puatizau2020} and illustrate one mitigation strategy for the aging mechanisms considered here.
 
 \subsection{Field-Data-Driven and Machine-Learning SOH Estimation}
 
@@ -92,7 +95,7 @@ Most relevant to the present paper is a recent and still-limited strand of work 
 
 \subsection{Battery Monitoring in Heavy-Duty and Military Vehicle Contexts}
 
-Industry and trade literature on heavy-duty and military ground vehicles consistently identifies starter-battery reliability as an operational concern: engine starting is described as a primary, safety- and mission-critical function of the vehicle battery, and low temperatures are noted to compound the problem by simultaneously reducing available battery current and increasing the current required to crank the engine~\cite{milembedded_battery,stryten_military}. Without a dedicated battery-health monitor, assessing the state of charge or health of a conventional lead-acid battery in these fleets is frequently described as guesswork, with the most common failure mode being a progressive increase in internal resistance and corresponding loss of cranking capability~\cite{milembedded_battery}. This grey literature underscores the practical motivation for the present study but, being non-peer-reviewed and largely vendor-authored, does not provide a validated feature set or a lab-to-field comparison of the kind developed here.
+Industry and trade literature on heavy-duty and military ground vehicles consistently identifies starter-battery reliability as an operational concern: engine starting is described as a primary, safety- and mission-critical function of the vehicle battery, and low temperatures are noted to compound the problem by simultaneously reducing available battery current and increasing the current required to crank the engine~\cite{milembedded_battery,stryten_military}. Without a dedicated battery-health monitor, assessing the state of charge or health of a conventional lead-acid battery in these fleets is frequently described as guesswork, with the most common failure mode being a progressive increase in internal resistance and corresponding loss of cranking capability~\cite{milembedded_battery}. This grey literature underscores the practical motivation for the present study but, being non-peer-reviewed and largely vendor-authored, does not provide a validated feature set or a lab-to-field comparison of the kind developed here. More broadly, predictive maintenance of heavy-duty vehicle components is an active research area in its own right; recent component-level prognostics work on heavy-duty trucks~\cite{dimidov2025} and general treatments of the practical challenges of deploying predictive maintenance in the field~\cite{tinga2025} both underscore that translating lab- or fleet-analytics-derived indicators into reliable in-service monitoring remains difficult even outside the battery domain specifically.
 
 % ============================================================
 \section{Methodology}
@@ -182,50 +185,26 @@ The validation procedure applies the feature-extraction pipeline of Section~\ref
 
 % ============================================================
 % Bibliography
-% NOTE: verify all entries (authors, year, venue, pages) before
-% submission -- assembled from search snippets, not full text.
+% ------------------------------------------------------------
+% Two .bib files are used:
+%   references.bib     -- sources found via web search that are
+%                          NOT in your Zotero library (included in
+%                          this repo; verify entries before
+%                          submission -- assembled from search
+%                          snippets, not full text).
+%   zotero-library.bib  -- to be produced by linking this Overleaf
+%                          project to your Zotero library.
+% \todo{once Zotero is linked in Overleaf, confirm the exact
+% filename it exports/syncs (e.g. via Better BibTeX auto-export)
+% and update the \bibliography{} call below to match if different.
+% Also confirm the citekey format it generates: the \cite{} calls
+% in this draft assume author+year keys (kerley2015, noura2020,
+% mohsin2022, tairov2011, zhang2012, medora2005, puatizau2020,
+% he2014, dimidov2025, tinga2025, kim2025) -- if your export uses a
+% different convention (e.g. Zotero's native item keys such as
+% BRRUR57U), update the in-text \cite{} keys throughout to match.}
 % ============================================================
-\begin{thebibliography}{00}
-
-\bibitem{hyun_cranking_soh}
-Hyun \emph{et al.}, ``State of Health Estimation System for Lead-Acid Car Batteries Through Cranking Voltage Monitoring,'' \todo{venue/thesis institution, year}. [Online]. Available: \url{https://vtechworks.lib.vt.edu/items/639256f6-630b-4465-a186-0fd15cfa0eb3}
-
-\bibitem{ieee_automotive_soh}
-``Automotive lead-acid battery state-of-health monitoring system,'' \todo{authors, conference name, year}, IEEE. [Online]. Available: \url{https://ieeexplore.ieee.org/document/7392714/}
-
-\bibitem{stepresponse_soh}
-``Model-based state of health estimation of a lead-acid battery using step-response and emulated in-situ vehicle data,'' \todo{authors, journal, year}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S2352152X21001146}
-
-\bibitem{lead_acid_impedance_aging}
-``Effect of ageing on the impedance of the lead-acid battery,'' \todo{authors, journal, year}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S2352152X21001390}
-
-\bibitem{eis_soh_timedep}
-``Time-dependent analysis of the state-of-health for lead-acid batteries: An EIS study,'' \todo{authors, journal, 2018}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S2352152X18303712}
-
-\bibitem{ruetschi_aging}
-P.~Ruetschi, ``Aging mechanisms and service life of lead-acid batteries,'' \emph{Journal of Power Sources}, vol.~127, pp.~33--44, 2004.
-
-\bibitem{labfield_gap}
-``Lab-to-field gap in battery aging studies: Mismatch of operating conditions between laboratory environments and real-world automotive applications,'' \todo{authors, journal, 2025}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/pii/S2590116825001250}
-
-\bibitem{transferable_capacity_estimation}
-``Transferable data-driven capacity estimation for lithium-ion batteries with deep learning: A case study from laboratory to field applications,'' \todo{authors, journal, 2023}. [Online]. Available: \url{https://www.sciencedirect.com/science/article/abs/pii/S030626192301111X}
-
-\bibitem{multimodal_ev_field}
-``Multi-modal framework for battery state of health evaluation using open-source electric vehicle data,'' \todo{authors, journal, 2024/2025}. [Online]. Available: \url{https://pmc.ncbi.nlm.nih.gov/articles/PMC11779878/}
-
-\bibitem{domain_ml_soh}
-``Domain knowledge-guided machine learning framework for state of health estimation in Lithium-ion batteries,'' \emph{Communications Engineering}, \todo{authors, 2024}. [Online]. Available: \url{https://www.nature.com/articles/s44172-024-00304-2}
-
-\bibitem{robust_soh_buses}
-``Robust SOH estimation for Li-ion battery packs of real-world electric buses with charging segments,'' \emph{Scientific Reports}, \todo{authors, 2025}. [Online]. Available: \url{https://www.nature.com/articles/s41598-025-09108-6}
-
-\bibitem{milembedded_battery}
-``The battery's role in the evolving military ground vehicle,'' \emph{Military Embedded Systems}. [Online]. Available: \url{https://militaryembedded.com/comms/vetronics/the-batterys-role-in-the-evolving-military-ground-vehicle}
-
-\bibitem{stryten_military}
-``Power and Cycle Life for Batteries in Military Vehicles,'' Stryten Energy. [Online]. Available: \url{https://www.stryten.com/power-and-cycle-life-for-batteries-in-military-vehicles/}
-
-\end{thebibliography}
+\bibliographystyle{IEEEtran}
+\bibliography{references,zotero-library}
 
 \end{document}
