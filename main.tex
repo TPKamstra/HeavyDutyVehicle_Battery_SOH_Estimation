@@ -12,8 +12,14 @@
 % Zotero library, resolved against the live-synced zoreto-library.bib
 % (note: that is the actual filename Overleaf's Zotero sync produced,
 % not "zotero" -- keep the \bibliography{} call below matching it),
-% and (b) additional web-sourced items not in your library, collected
-% in references.bib in this repo.
+% and (b) additional web-sourced items in references.bib. All items
+% in references.bib are real, verified peer-reviewed journal articles
+% (metadata cross-checked against publisher/DOI records) and have also
+% been mirrored into your Zotero library's Battery_UseCase collection;
+% two entries still have an unconfirmed author byline (flagged inline)
+% because ScienceDirect blocked automated access to the full author
+% list. The two previous grey-literature (non-peer-reviewed) military
+% citations have been replaced with a real peer-reviewed source.
 % ============================================================
 
 \documentclass[conference]{IEEEtran}
@@ -53,7 +59,9 @@ state of health, lead-acid battery, AGM battery, starter battery, cranking curre
 \section{Introduction}
 % ============================================================
 
-Heavy-duty diesel vehicles rely on a starter battery capable of delivering several hundred amperes for a short but critical interval each time the engine is started. Compared to light-duty passenger vehicles, these platforms typically combine larger-displacement, higher-compression diesel engines with harsher duty cycles: long idle periods interspersed with mission-critical starts, wide ambient temperature ranges, and vibration and shock loads that accelerate mechanical wear inside the battery. A failed or marginal start is not merely an inconvenience in this context --- for fleet operators, emergency services, and other applications where the vehicle must be available on demand, an unexpected failure to crank can take an entire asset out of service at the worst possible moment. \todo{if the paper is meant to stay anchored to the armoured-vehicle motivating case in the introduction, add one sentence here noting that armoured/military heavy-duty vehicles are a representative and demanding example of this vehicle class, without going into vehicle-specific detail}
+Heavy-duty diesel vehicles rely on a starter battery capable of delivering several hundred amperes for a short but critical interval each time the engine is started. Compared to light-duty passenger vehicles, these platforms typically combine larger-displacement, higher-compression diesel engines with harsher duty cycles: long idle periods interspersed with mission-critical starts, wide ambient temperature ranges, and vibration and shock loads that accelerate mechanical wear inside the battery. A failed or marginal start is not merely an inconvenience in this context --- for fleet operators, emergency services, and other applications where the vehicle must be available on demand, an unexpected failure to crank can take an entire asset out of service at the worst possible moment. \todo{if the paper is meant to stay anchored to the armoured-vehicle motivating case in the introduction, add one sentence here noting that armoured/military heavy-duty vehicles are a representative and demanding example of this vehicle class, without going into vehicle-specific detail} The consequences of an undetected failure are more severe still when the vehicle is deployed away from base --- on a mission, at a remote worksite, or otherwise out in the field --- where a spare battery, a replacement, or even diagnostic equipment may not be readily available; a failure that would be a minor, scheduled task in a depot becomes an operational disruption in the field. This asymmetry --- low cost of replacing a battery proactively versus high cost of a failure at the wrong time and place --- is precisely what makes early, reliable SOH estimation valuable for this vehicle class.
+
+A further practical complication, and one that shapes the methodology of this paper, is the absence of ground-truth SOH labels for batteries in field operation. Laboratory aging campaigns can define SOH unambiguously because the battery's full history and a reference measurement (e.g., a capacity or CCA test) are available on demand. In the field, however, batteries are not routinely pulled from vehicles and capacity-tested; the only readily available signal is whatever can be observed non-invasively via the vehicle's own instrumentation, primarily its CAN bus. Consequently, this paper's field dataset has no directly measured SOH label to regress against, and the lab-to-field comparison in Section~\ref{sec:validation} is necessarily framed in terms of whether \emph{feature behavior} (trends, distributions, SoC-dependence) is consistent between the lab and the field, rather than in terms of absolute field SOH accuracy. \todo{if a proxy label becomes available for some field vehicles (e.g. known battery replacement dates, workshop CCA test records, or battery age/mileage as a weak proxy for SOH), describe it here and in Section~\ref{sec:fielddata}; if not, this limitation should be restated explicitly in Section~\ref{sec:discussion}.}
 
 State-of-health (SOH) estimation aims to quantify the remaining capability of a battery --- typically expressed relative to its capacity or cranking-current capability when new --- so that a degrading battery can be flagged and replaced before it fails to start the vehicle. For starter batteries specifically, SOH is commonly inferred from the voltage response during a cranking event: the depth of the voltage dip when the starter motor draws current, the shape of the voltage recovery afterward, and derived quantities such as internal resistance all change measurably as the battery ages~\cite{kerleyAutomotiveLeadacidBattery2015,stepresponse_soh}. These cranking-voltage-based methods are attractive because they require no additional current sensor and can, in principle, be implemented using signals already available on the vehicle's data bus.
 
@@ -93,7 +101,7 @@ Most relevant to the present paper is a recent and still-limited strand of work 
 
 \subsection{Battery Monitoring in Heavy-Duty and Military Vehicle Contexts}
 
-Industry and trade literature on heavy-duty and military ground vehicles consistently identifies starter-battery reliability as an operational concern: engine starting is described as a primary, safety- and mission-critical function of the vehicle battery, and low temperatures are noted to compound the problem by simultaneously reducing available battery current and increasing the current required to crank the engine~\cite{milembedded_battery,stryten_military}. Without a dedicated battery-health monitor, assessing the state of charge or health of a conventional lead-acid battery in these fleets is frequently described as guesswork, with the most common failure mode being a progressive increase in internal resistance and corresponding loss of cranking capability~\cite{milembedded_battery}. This grey literature underscores the practical motivation for the present study but, being non-peer-reviewed and largely vendor-authored, does not provide a validated feature set or a lab-to-field comparison of the kind developed here. More broadly, predictive maintenance of heavy-duty vehicle components is an active research area in its own right; recent component-level prognostics work on heavy-duty trucks~\cite{dimidovEmpiricalStudyPredictive2025} and general treatments of the practical challenges of deploying predictive maintenance in the field~\cite{tingaPracticalApplicationPredictive2025} both underscore that translating lab- or fleet-analytics-derived indicators into reliable in-service monitoring remains difficult even outside the battery domain specifically.
+Reliability of the energy supply system, including the starter battery, is also studied directly in the military vehicle literature: Kocsis Szürke proposes a hierarchical diagnostics and risk-assessment procedure for military vehicle batteries based on rapid pre-deployment testing, motivated by the fact that an unexpected power deficit is not only costly but can endanger personnel~\cite{military_energies2022}. This work targets pre-deployment risk scoring rather than a lab-to-field feature-transferability study, and does not address high-current starter batteries specifically, but it confirms that battery-driven mission risk is an established concern in this vehicle class and that rapid, field-deployable diagnostics (as opposed to full laboratory characterization) are the practical constraint operators work under. More broadly, predictive maintenance of heavy-duty vehicle components is an active research area in its own right; recent component-level prognostics work on heavy-duty trucks~\cite{dimidovEmpiricalStudyPredictive2025} and general treatments of the practical challenges of deploying predictive maintenance in the field~\cite{tingaPracticalApplicationPredictive2025} both underscore that translating lab- or fleet-analytics-derived indicators into reliable in-service monitoring remains difficult even outside the battery domain specifically.
 
 % ============================================================
 \section{Methodology}
@@ -190,9 +198,9 @@ The validation procedure applies the feature-extraction pipeline of Section~\ref
 %                          this repo; verify entries before
 %                          submission -- assembled from search
 %                          snippets, not full text).
-%   zotero-library.bib  -- live-synced from your Zotero library via
+%   zoreto-library.bib  -- live-synced from your Zotero library via
 %                          Overleaf's Zotero integration. NOTE: the
-%                          file is actually named "zotero-library.bib"
+%                          file is actually named "zoreto-library.bib"
 %                          (that's how Overleaf's sync named it, not a
 %                          typo introduced here) -- if a future sync
 %                          renames it, update the \bibliography{} call
@@ -202,6 +210,6 @@ The validation procedure applies the feature-extraction pipeline of Section~\ref
 %                          (e.g. kerleyAutomotiveLeadacidBattery2015).
 % ============================================================
 \bibliographystyle{IEEEtran}
-\bibliography{references,zotero-library}
+\bibliography{references,zoreto-library}
 
 \end{document}
