@@ -1,0 +1,602 @@
+[
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "n_dis_pulses",
+    "min": 2.0,
+    "mean": 5.8947,
+    "max": 7.0,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "n_chg_pulses",
+    "min": 2.0,
+    "mean": 2.0,
+    "max": 2.0,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "DCIR_dis [mΩ]",
+    "min": 42.5,
+    "mean": 84.6368,
+    "max": 211.25,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "DCIR_chg [mΩ]",
+    "min": 71.15,
+    "mean": 159.3474,
+    "max": 692.45,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "V_OCV [V]",
+    "min": 10.325,
+    "mean": 12.2344,
+    "max": 12.967,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "SoC_start [%]",
+    "min": 0.0,
+    "mean": 64.0316,
+    "max": 100.0,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "Q_dis [Ah]",
+    "min": 0.1565,
+    "mean": 0.5503,
+    "max": 0.7054,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "Q_chg [Ah]",
+    "min": 0.4135,
+    "mean": 0.4151,
+    "max": 0.4155,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "I_dis_peak [A]",
+    "min": -22.58,
+    "mean": -15.8368,
+    "max": -4.21,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "dur_dis_mean [s]",
+    "min": 64.37,
+    "mean": 75.5489,
+    "max": 107.55,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "V_eop_dis [V]",
+    "min": 10.2,
+    "mean": 11.5658,
+    "max": 12.37,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "V_recover_dis [V]",
+    "min": 11.12,
+    "mean": 12.3289,
+    "max": 12.98,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "CA_dVdt [mV/s]",
+    "min": 0.18,
+    "mean": 2.3684,
+    "max": 4.87,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "V_chg_peak [V]",
+    "min": 12.23,
+    "mean": 13.3605,
+    "max": 14.61,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "Eta_c [%]",
+    "min": 58.8,
+    "mean": 88.1263,
+    "max": 264.2,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "Temp [°C]",
+    "min": 20.4,
+    "mean": 22.4789,
+    "max": 24.41,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "Humidity [%]",
+    "min": 30.7,
+    "mean": 40.3316,
+    "max": 49.0,
+    "n": 19
+  },
+  {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "cycle",
+    "min": 0.0,
+    "mean": 70.5263,
+    "max": 130.0,
+    "n": 19
+  },
+  {
+    "source": "soh_history (discharge_c5 files)",
+    "metric": "capacity_ah",
+    "min": 5.5962,
+    "mean": 10.219,
+    "max": 14.0844,
+    "n": 13
+  },
+  {
+    "source": "soh_history (discharge_c5 files)",
+    "metric": "v_final",
+    "min": 10.7765,
+    "mean": 10.7918,
+    "max": 10.7931,
+    "n": 13
+  },
+  {
+    "source": "soh_history (discharge_c5 files)",
+    "metric": "temp_c",
+    "min": 20.4,
+    "mean": 22.8577,
+    "max": 25.99,
+    "n": 13
+  },
+  {
+    "source": "soh_history (discharge_c5 files)",
+    "metric": "humidity_pct",
+    "min": 32.8,
+    "mean": 45.1923,
+    "max": 61.7,
+    "n": 13
+  },
+  {
+    "source": "soh_history (discharge_c5 files)",
+    "metric": "soh_pct",
+    "min": 43.7,
+    "mean": 79.7231,
+    "max": 109.9,
+    "n": 13
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "ocv_filename [V]",
+    "min": 12.14,
+    "mean": 12.5528,
+    "max": 13.34,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "soc_nominal [%]",
+    "min": 42.5,
+    "mean": 80.0936,
+    "max": 100.0,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "n_dis_pulses",
+    "min": 5.0,
+    "mean": 6.9362,
+    "max": 38.0,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "n_chg_pulses",
+    "min": 0.0,
+    "mean": 1.4681,
+    "max": 2.0,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "DCIR_dis [mΩ]",
+    "min": 47.73,
+    "mean": 697.8257,
+    "max": 1802.84,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "V_min [V]",
+    "min": 9.918,
+    "mean": 10.1319,
+    "max": 10.46,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "V_mean_dis [V]",
+    "min": 10.198,
+    "mean": 11.1099,
+    "max": 12.723,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "I_peak_dis [A]",
+    "min": -60.02,
+    "mean": -24.1285,
+    "max": -2.49,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "Q_dis [Ah]",
+    "min": 0.0025,
+    "mean": 0.2693,
+    "max": 0.707,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "Q_chg [Ah]",
+    "min": 0.0,
+    "mean": 0.0444,
+    "max": 0.4155,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "E_dis [Wh]",
+    "min": 0.029,
+    "mean": 3.0357,
+    "max": 8.202,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "V_eop_dis [V]",
+    "min": 10.2,
+    "mean": 10.7215,
+    "max": 12.03,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "V_recover_dis [V]",
+    "min": 10.59,
+    "mean": 12.1243,
+    "max": 12.91,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "CA_dVdt [mV/s]",
+    "min": -2.31,
+    "mean": -0.17,
+    "max": 2.08,
+    "n": 5
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "Temp [°C]",
+    "min": 24.0,
+    "mean": 26.0928,
+    "max": 27.9,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "Humidity [%]",
+    "min": 52.1,
+    "mean": 58.9021,
+    "max": 63.0,
+    "n": 47
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "linked_soh_pct",
+    "min": 43.7,
+    "mean": 47.0,
+    "max": 50.3,
+    "n": 18
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "ocv_label_V",
+    "min": 12.55,
+    "mean": 12.6725,
+    "max": 13.28,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "rest_baseline_Vmean",
+    "min": 12.552,
+    "mean": 12.6703,
+    "max": 13.244,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "ocv_window_Vpre",
+    "min": 12.552,
+    "mean": 12.6706,
+    "max": 13.227,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "wakeup_load_1_sag_V",
+    "min": 0.0986,
+    "mean": 2.0788,
+    "max": 2.4082,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "wakeup_load_1_R_int_mohm",
+    "min": 301.5322,
+    "mean": 1062.4828,
+    "max": 1592.5306,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "wakeup_load_2_sag_V",
+    "min": -1.3739,
+    "mean": -0.429,
+    "max": -0.0365,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "wakeup_load_2_R_int_mohm",
+    "min": -1354.7315,
+    "mean": -555.2008,
+    "max": -253.8124,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "glow_plug_like_load_1_Vmean",
+    "min": 10.1978,
+    "mean": 10.5638,
+    "max": 13.1122,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "driving_aux_load_1_V_mean",
+    "min": 10.3516,
+    "mean": 10.74,
+    "max": 13.1553,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "driving_aux_load_1_V_std",
+    "min": 0.1182,
+    "mean": 0.5072,
+    "max": 0.6824,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "driving_aux_load_1_R_int_est_mohm",
+    "min": 235.2088,
+    "mean": 656.1948,
+    "max": 3578.8353,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "ramp_like_load_1_V_mean",
+    "min": 10.2765,
+    "mean": 10.7033,
+    "max": 13.1061,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "ramp_like_load_1_V_std",
+    "min": 0.0139,
+    "mean": 0.2052,
+    "max": 0.629,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "ramp_like_load_1_R_int_est_mohm",
+    "min": 82.4216,
+    "mean": 159.191,
+    "max": 359.2242,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_cold_V_pre",
+    "min": 10.1958,
+    "mean": 10.5599,
+    "max": 13.102,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_cold_V_min",
+    "min": 10.193,
+    "mean": 10.5566,
+    "max": 13.102,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_cold_I_peak_A",
+    "min": 0.33,
+    "mean": 1.652,
+    "max": 2.764,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_cold_V_sustained",
+    "min": 10.1962,
+    "mean": 10.5603,
+    "max": 13.0988,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_cold_R_int_apparent_mohm",
+    "min": 0.0,
+    "mean": 1.8973,
+    "max": 2.9608,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_hot_V_pre",
+    "min": 12.36,
+    "mean": 12.5945,
+    "max": 13.1707,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_hot_V_min",
+    "min": 10.193,
+    "mean": 10.5649,
+    "max": 13.152,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_hot_I_peak_A",
+    "min": 0.334,
+    "mean": 2.6774,
+    "max": 3.595,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_hot_V_sustained",
+    "min": 10.195,
+    "mean": 10.565,
+    "max": 13.1398,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "crank_hot_R_int_apparent_mohm",
+    "min": 55.988,
+    "mean": 684.7225,
+    "max": 840.0893,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "recovery_after_cold_V_plus30s",
+    "min": 10.493,
+    "mean": 11.9413,
+    "max": 13.152,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "recovery_after_hot_V_plus30s",
+    "min": 12.368,
+    "mean": 12.5724,
+    "max": 13.168,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "alternator_charge_after_cold_Ah",
+    "min": 0.0286,
+    "mean": 0.1727,
+    "max": 0.1952,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "alternator_charge_after_cold_ratio_pct",
+    "min": 84.196,
+    "mean": 159.3487,
+    "max": 215.7617,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "total_ah_discharged",
+    "min": 0.0396,
+    "mean": 0.2918,
+    "max": 0.4766,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "total_ah_charged",
+    "min": 0.0286,
+    "mean": 0.1727,
+    "max": 0.1952,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "run_duration_s",
+    "min": 2065.154,
+    "mean": 2065.1816,
+    "max": 2065.199,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "n_events",
+    "min": 13.0,
+    "mean": 13.0,
+    "max": 13.0,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "min_voltage",
+    "min": 9.743,
+    "mean": 10.1795,
+    "max": 13.094,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "final_voltage",
+    "min": 12.543,
+    "mean": 12.6507,
+    "max": 13.177,
+    "n": 8
+  },
+  {
+    "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
+    "metric": "cutoff_hit",
+    "min": 0.0,
+    "mean": 0.0,
+    "max": 0.0,
+    "n": 8
+  }
+]

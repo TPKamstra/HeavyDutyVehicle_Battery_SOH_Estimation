@@ -1,0 +1,76 @@
+source,metric,min,mean,max,n
+degradation_trends (testday_run sessions),n_dis_pulses,2.0,5.8947,7.0,19
+degradation_trends (testday_run sessions),n_chg_pulses,2.0,2.0,2.0,19
+degradation_trends (testday_run sessions),DCIR_dis [mΩ],42.5,84.6368,211.25,19
+degradation_trends (testday_run sessions),DCIR_chg [mΩ],71.15,159.3474,692.45,19
+degradation_trends (testday_run sessions),V_OCV [V],10.325,12.2344,12.967,19
+degradation_trends (testday_run sessions),SoC_start [%],0.0,64.0316,100.0,19
+degradation_trends (testday_run sessions),Q_dis [Ah],0.1565,0.5503,0.7054,19
+degradation_trends (testday_run sessions),Q_chg [Ah],0.4135,0.4151,0.4155,19
+degradation_trends (testday_run sessions),I_dis_peak [A],-22.58,-15.8368,-4.21,19
+degradation_trends (testday_run sessions),dur_dis_mean [s],64.37,75.5489,107.55,19
+degradation_trends (testday_run sessions),V_eop_dis [V],10.2,11.5658,12.37,19
+degradation_trends (testday_run sessions),V_recover_dis [V],11.12,12.3289,12.98,19
+degradation_trends (testday_run sessions),CA_dVdt [mV/s],0.18,2.3684,4.87,19
+degradation_trends (testday_run sessions),V_chg_peak [V],12.23,13.3605,14.61,19
+degradation_trends (testday_run sessions),Eta_c [%],58.8,88.1263,264.2,19
+degradation_trends (testday_run sessions),Temp [°C],20.4,22.4789,24.41,19
+degradation_trends (testday_run sessions),Humidity [%],30.7,40.3316,49.0,19
+degradation_trends (testday_run sessions),cycle,0.0,70.5263,130.0,19
+soh_history (discharge_c5 files),capacity_ah,5.5962,10.219,14.0844,13
+soh_history (discharge_c5 files),v_final,10.7765,10.7918,10.7931,13
+soh_history (discharge_c5 files),temp_c,20.4,22.8577,25.99,13
+soh_history (discharge_c5 files),humidity_pct,32.8,45.1923,61.7,13
+soh_history (discharge_c5 files),soh_pct,43.7,79.7231,109.9,13
+soc_sweep (SoCsweep/Block testday runs),ocv_filename [V],12.14,12.5528,13.34,47
+soc_sweep (SoCsweep/Block testday runs),soc_nominal [%],42.5,80.0936,100.0,47
+soc_sweep (SoCsweep/Block testday runs),n_dis_pulses,5.0,6.9362,38.0,47
+soc_sweep (SoCsweep/Block testday runs),n_chg_pulses,0.0,1.4681,2.0,47
+soc_sweep (SoCsweep/Block testday runs),DCIR_dis [mΩ],47.73,697.8257,1802.84,47
+soc_sweep (SoCsweep/Block testday runs),V_min [V],9.918,10.1319,10.46,47
+soc_sweep (SoCsweep/Block testday runs),V_mean_dis [V],10.198,11.1099,12.723,47
+soc_sweep (SoCsweep/Block testday runs),I_peak_dis [A],-60.02,-24.1285,-2.49,47
+soc_sweep (SoCsweep/Block testday runs),Q_dis [Ah],0.0025,0.2693,0.707,47
+soc_sweep (SoCsweep/Block testday runs),Q_chg [Ah],0.0,0.0444,0.4155,47
+soc_sweep (SoCsweep/Block testday runs),E_dis [Wh],0.029,3.0357,8.202,47
+soc_sweep (SoCsweep/Block testday runs),V_eop_dis [V],10.2,10.7215,12.03,47
+soc_sweep (SoCsweep/Block testday runs),V_recover_dis [V],10.59,12.1243,12.91,47
+soc_sweep (SoCsweep/Block testday runs),CA_dVdt [mV/s],-2.31,-0.17,2.08,5
+soc_sweep (SoCsweep/Block testday runs),Temp [°C],24.0,26.0928,27.9,47
+soc_sweep (SoCsweep/Block testday runs),Humidity [%],52.1,58.9021,63.0,47
+soc_sweep (SoCsweep/Block testday runs),linked_soh_pct,43.7,47.0,50.3,18
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",ocv_label_V,12.55,12.6725,13.28,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",rest_baseline_Vmean,12.552,12.6703,13.244,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",ocv_window_Vpre,12.552,12.6706,13.227,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",wakeup_load_1_sag_V,0.0986,2.0788,2.4082,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",wakeup_load_1_R_int_mohm,301.5322,1062.4828,1592.5306,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",wakeup_load_2_sag_V,-1.3739,-0.429,-0.0365,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",wakeup_load_2_R_int_mohm,-1354.7315,-555.2008,-253.8124,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",glow_plug_like_load_1_Vmean,10.1978,10.5638,13.1122,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",driving_aux_load_1_V_mean,10.3516,10.74,13.1553,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",driving_aux_load_1_V_std,0.1182,0.5072,0.6824,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",driving_aux_load_1_R_int_est_mohm,235.2088,656.1948,3578.8353,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",ramp_like_load_1_V_mean,10.2765,10.7033,13.1061,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",ramp_like_load_1_V_std,0.0139,0.2052,0.629,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",ramp_like_load_1_R_int_est_mohm,82.4216,159.191,359.2242,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_cold_V_pre,10.1958,10.5599,13.102,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_cold_V_min,10.193,10.5566,13.102,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_cold_I_peak_A,0.33,1.652,2.764,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_cold_V_sustained,10.1962,10.5603,13.0988,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_cold_R_int_apparent_mohm,0.0,1.8973,2.9608,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_hot_V_pre,12.36,12.5945,13.1707,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_hot_V_min,10.193,10.5649,13.152,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_hot_I_peak_A,0.334,2.6774,3.595,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_hot_V_sustained,10.195,10.565,13.1398,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",crank_hot_R_int_apparent_mohm,55.988,684.7225,840.0893,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",recovery_after_cold_V_plus30s,10.493,11.9413,13.152,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",recovery_after_hot_V_plus30s,12.368,12.5724,13.168,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",alternator_charge_after_cold_Ah,0.0286,0.1727,0.1952,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",alternator_charge_after_cold_ratio_pct,84.196,159.3487,215.7617,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",total_ah_discharged,0.0396,0.2918,0.4766,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",total_ah_charged,0.0286,0.1727,0.1952,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",run_duration_s,2065.154,2065.1816,2065.199,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",n_events,13.0,13.0,13.0,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",min_voltage,9.743,10.1795,13.094,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",final_voltage,12.543,12.6507,13.177,8
+"testday_v2_beta (partial rollout, 2026-07-02/03 only)",cutoff_hit,0.0,0.0,0.0,8

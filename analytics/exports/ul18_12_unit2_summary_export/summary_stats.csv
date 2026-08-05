@@ -1,0 +1,54 @@
+source,metric,min,mean,max,n
+testday_features (SoC-sweep runs),ocv_label_V,11.67,12.5054,13.61,140
+testday_features (SoC-sweep runs),rest_baseline_Vmean,11.7471,12.5147,13.5355,140
+testday_features (SoC-sweep runs),ocv_window_Vpre,11.753,12.529,13.493,136
+testday_features (SoC-sweep runs),wakeup_load_1_sag_V,0.0836,1.5261,2.7589,138
+testday_features (SoC-sweep runs),wakeup_load_1_R_int_mohm,56.0749,448.6569,1234.4051,138
+testday_features (SoC-sweep runs),wakeup_load_2_sag_V,-1.5765,-0.6877,0.008,133
+testday_features (SoC-sweep runs),wakeup_load_2_R_int_mohm,-3258.9654,-663.8204,2.5633,133
+testday_features (SoC-sweep runs),glow_plug_like_load_1_Vmean,10.1978,10.9731,13.3355,132
+testday_features (SoC-sweep runs),driving_aux_load_1_V_mean,10.2201,11.113,13.5395,134
+testday_features (SoC-sweep runs),driving_aux_load_1_V_std,0.0,0.3527,0.9674,134
+testday_features (SoC-sweep runs),driving_aux_load_1_R_int_est_mohm,16.356,897.7135,5550.0013,132
+testday_features (SoC-sweep runs),ramp_like_load_1_V_mean,10.193,11.2986,13.3491,132
+testday_features (SoC-sweep runs),ramp_like_load_1_V_std,0.0,0.4446,1.0768,132
+testday_features (SoC-sweep runs),ramp_like_load_1_R_int_est_mohm,35.4838,301.0544,1262.2321,131
+testday_features (SoC-sweep runs),crank_cold_V_pre,10.1954,10.9568,13.3163,131
+testday_features (SoC-sweep runs),crank_cold_V_min,10.193,10.9531,13.31,131
+testday_features (SoC-sweep runs),crank_cold_I_peak_A,0.33,4.6531,9.056,131
+testday_features (SoC-sweep runs),crank_cold_V_sustained,10.195,10.9554,13.3104,131
+testday_features (SoC-sweep runs),crank_cold_R_int_apparent_mohm,-7.3054,1.6948,22.7545,131
+testday_features (SoC-sweep runs),crank_hot_V_pre,10.5336,12.1546,13.427,131
+testday_features (SoC-sweep runs),crank_hot_V_min,10.168,11.0741,13.402,131
+testday_features (SoC-sweep runs),crank_hot_I_peak_A,0.33,5.9541,9.982,131
+testday_features (SoC-sweep runs),crank_hot_V_sustained,10.0984,10.9932,13.3866,131
+testday_features (SoC-sweep runs),crank_hot_R_int_apparent_mohm,32.2781,214.0586,808.4016,131
+testday_features (SoC-sweep runs),recovery_after_cold_V_plus30s,10.501,12.0567,13.393,131
+testday_features (SoC-sweep runs),recovery_after_hot_V_plus30s,10.518,12.1493,13.427,131
+testday_features (SoC-sweep runs),alternator_charge_after_cold_Ah,0.0253,0.1716,0.1952,131
+testday_features (SoC-sweep runs),alternator_charge_after_cold_ratio_pct,35.7399,89.6193,381.2433,131
+testday_features (SoC-sweep runs),total_ah_discharged,0.0,0.5618,1.0332,140
+testday_features (SoC-sweep runs),total_ah_charged,0.0,0.1612,0.1967,140
+testday_features (SoC-sweep runs),run_duration_s,774.775,2022.1058,2065.2,140
+testday_features (SoC-sweep runs),n_events,2.0,12.4571,13.0,140
+testday_features (SoC-sweep runs),min_voltage,9.768,10.7769,13.31,140
+testday_features (SoC-sweep runs),final_voltage,10.501,12.2969,13.435,140
+testday_features (SoC-sweep runs),recovery_after_evt6_V_plus30s,11.477,12.348,13.219,2
+testday_features (SoC-sweep runs),alternator_charge_after_evt7_Ah,0.0,0.0,0.0,2
+testday_features (SoC-sweep runs),alternator_charge_after_evt7_ratio_pct,0.0,0.0,0.0,1
+testday_features (SoC-sweep runs),crank_1_V_pre,10.4202,10.4202,10.4202,1
+testday_features (SoC-sweep runs),crank_1_V_min,10.193,10.193,10.193,1
+testday_features (SoC-sweep runs),crank_1_I_peak_A,7.61,7.61,7.61,1
+testday_features (SoC-sweep runs),crank_1_V_sustained,10.193,10.193,10.193,1
+testday_features (SoC-sweep runs),crank_1_R_int_apparent_mohm,29.8499,29.8499,29.8499,1
+testday_features (SoC-sweep runs),recovery_after_1_V_plus30s,11.743,11.743,11.743,1
+testday_features (SoC-sweep runs),alternator_charge_after_1_Ah,0.0741,0.0741,0.0741,1
+testday_features (SoC-sweep runs),alternator_charge_after_1_ratio_pct,48.6387,48.6387,48.6387,1
+testday_features (SoC-sweep runs),recovery_after_evt12_V_plus30s,11.785,11.8433,11.902,3
+testday_features (SoC-sweep runs),block_c5_capacity_ah,0.9378,9.449,18.1593,140
+testday_features (SoC-sweep runs),block_c5_reached_cutoff,1.0,1.0,1.0,140
+testday_features (SoC-sweep runs),cutoff_hit,0.0,0.0643,1.0,140
+testday_features (SoC-sweep runs),soc_pct,21.0,75.0571,100.0,140
+degradation_cycles,discharge_ah,0.7947,5.2634,12.8034,180
+degradation_cycles,charge_ah,0.7722,5.1744,15.1748,200
+"soh_history (per block, C/5)",block_c5_capacity_ah,0.9378,7.5663,18.1593,20

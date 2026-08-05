@@ -1,0 +1,426 @@
+[
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "ocv_label_V",
+    "min": 11.67,
+    "mean": 12.5054,
+    "max": 13.61,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "rest_baseline_Vmean",
+    "min": 11.7471,
+    "mean": 12.5147,
+    "max": 13.5355,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "ocv_window_Vpre",
+    "min": 11.753,
+    "mean": 12.529,
+    "max": 13.493,
+    "n": 136
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "wakeup_load_1_sag_V",
+    "min": 0.0836,
+    "mean": 1.5261,
+    "max": 2.7589,
+    "n": 138
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "wakeup_load_1_R_int_mohm",
+    "min": 56.0749,
+    "mean": 448.6569,
+    "max": 1234.4051,
+    "n": 138
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "wakeup_load_2_sag_V",
+    "min": -1.5765,
+    "mean": -0.6877,
+    "max": 0.008,
+    "n": 133
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "wakeup_load_2_R_int_mohm",
+    "min": -3258.9654,
+    "mean": -663.8204,
+    "max": 2.5633,
+    "n": 133
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "glow_plug_like_load_1_Vmean",
+    "min": 10.1978,
+    "mean": 10.9731,
+    "max": 13.3355,
+    "n": 132
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "driving_aux_load_1_V_mean",
+    "min": 10.2201,
+    "mean": 11.113,
+    "max": 13.5395,
+    "n": 134
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "driving_aux_load_1_V_std",
+    "min": 0.0,
+    "mean": 0.3527,
+    "max": 0.9674,
+    "n": 134
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "driving_aux_load_1_R_int_est_mohm",
+    "min": 16.356,
+    "mean": 897.7135,
+    "max": 5550.0013,
+    "n": 132
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "ramp_like_load_1_V_mean",
+    "min": 10.193,
+    "mean": 11.2986,
+    "max": 13.3491,
+    "n": 132
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "ramp_like_load_1_V_std",
+    "min": 0.0,
+    "mean": 0.4446,
+    "max": 1.0768,
+    "n": 132
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "ramp_like_load_1_R_int_est_mohm",
+    "min": 35.4838,
+    "mean": 301.0544,
+    "max": 1262.2321,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_cold_V_pre",
+    "min": 10.1954,
+    "mean": 10.9568,
+    "max": 13.3163,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_cold_V_min",
+    "min": 10.193,
+    "mean": 10.9531,
+    "max": 13.31,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_cold_I_peak_A",
+    "min": 0.33,
+    "mean": 4.6531,
+    "max": 9.056,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_cold_V_sustained",
+    "min": 10.195,
+    "mean": 10.9554,
+    "max": 13.3104,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_cold_R_int_apparent_mohm",
+    "min": -7.3054,
+    "mean": 1.6948,
+    "max": 22.7545,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_hot_V_pre",
+    "min": 10.5336,
+    "mean": 12.1546,
+    "max": 13.427,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_hot_V_min",
+    "min": 10.168,
+    "mean": 11.0741,
+    "max": 13.402,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_hot_I_peak_A",
+    "min": 0.33,
+    "mean": 5.9541,
+    "max": 9.982,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_hot_V_sustained",
+    "min": 10.0984,
+    "mean": 10.9932,
+    "max": 13.3866,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_hot_R_int_apparent_mohm",
+    "min": 32.2781,
+    "mean": 214.0586,
+    "max": 808.4016,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "recovery_after_cold_V_plus30s",
+    "min": 10.501,
+    "mean": 12.0567,
+    "max": 13.393,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "recovery_after_hot_V_plus30s",
+    "min": 10.518,
+    "mean": 12.1493,
+    "max": 13.427,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "alternator_charge_after_cold_Ah",
+    "min": 0.0253,
+    "mean": 0.1716,
+    "max": 0.1952,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "alternator_charge_after_cold_ratio_pct",
+    "min": 35.7399,
+    "mean": 89.6193,
+    "max": 381.2433,
+    "n": 131
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "total_ah_discharged",
+    "min": 0.0,
+    "mean": 0.5618,
+    "max": 1.0332,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "total_ah_charged",
+    "min": 0.0,
+    "mean": 0.1612,
+    "max": 0.1967,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "run_duration_s",
+    "min": 774.775,
+    "mean": 2022.1058,
+    "max": 2065.2,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "n_events",
+    "min": 2.0,
+    "mean": 12.4571,
+    "max": 13.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "min_voltage",
+    "min": 9.768,
+    "mean": 10.7769,
+    "max": 13.31,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "final_voltage",
+    "min": 10.501,
+    "mean": 12.2969,
+    "max": 13.435,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "recovery_after_evt6_V_plus30s",
+    "min": 11.477,
+    "mean": 12.348,
+    "max": 13.219,
+    "n": 2
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "alternator_charge_after_evt7_Ah",
+    "min": 0.0,
+    "mean": 0.0,
+    "max": 0.0,
+    "n": 2
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "alternator_charge_after_evt7_ratio_pct",
+    "min": 0.0,
+    "mean": 0.0,
+    "max": 0.0,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_1_V_pre",
+    "min": 10.4202,
+    "mean": 10.4202,
+    "max": 10.4202,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_1_V_min",
+    "min": 10.193,
+    "mean": 10.193,
+    "max": 10.193,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_1_I_peak_A",
+    "min": 7.61,
+    "mean": 7.61,
+    "max": 7.61,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_1_V_sustained",
+    "min": 10.193,
+    "mean": 10.193,
+    "max": 10.193,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_1_R_int_apparent_mohm",
+    "min": 29.8499,
+    "mean": 29.8499,
+    "max": 29.8499,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "recovery_after_1_V_plus30s",
+    "min": 11.743,
+    "mean": 11.743,
+    "max": 11.743,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "alternator_charge_after_1_Ah",
+    "min": 0.0741,
+    "mean": 0.0741,
+    "max": 0.0741,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "alternator_charge_after_1_ratio_pct",
+    "min": 48.6387,
+    "mean": 48.6387,
+    "max": 48.6387,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "recovery_after_evt12_V_plus30s",
+    "min": 11.785,
+    "mean": 11.8433,
+    "max": 11.902,
+    "n": 3
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "block_c5_capacity_ah",
+    "min": 0.9378,
+    "mean": 9.449,
+    "max": 18.1593,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "block_c5_reached_cutoff",
+    "min": 1.0,
+    "mean": 1.0,
+    "max": 1.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "cutoff_hit",
+    "min": 0.0,
+    "mean": 0.0643,
+    "max": 1.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "soc_pct",
+    "min": 21.0,
+    "mean": 75.0571,
+    "max": 100.0,
+    "n": 140
+  },
+  {
+    "source": "degradation_cycles",
+    "metric": "discharge_ah",
+    "min": 0.7947,
+    "mean": 5.2634,
+    "max": 12.8034,
+    "n": 180
+  },
+  {
+    "source": "degradation_cycles",
+    "metric": "charge_ah",
+    "min": 0.7722,
+    "mean": 5.1744,
+    "max": 15.1748,
+    "n": 200
+  },
+  {
+    "source": "soh_history (per block, C/5)",
+    "metric": "block_c5_capacity_ah",
+    "min": 0.9378,
+    "mean": 7.5663,
+    "max": 18.1593,
+    "n": 20
+  }
+]

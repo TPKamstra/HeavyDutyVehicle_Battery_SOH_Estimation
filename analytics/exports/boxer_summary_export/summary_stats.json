@@ -1,0 +1,101 @@
+[
+  {
+    "metric": "V_drop_total",
+    "category": "pack",
+    "unit": "%",
+    "min": 4.782,
+    "mean": 11.133,
+    "max": 36.469,
+    "n": 41
+  },
+  {
+    "metric": "R_int",
+    "category": "pack",
+    "unit": "mOhm",
+    "min": 6.46,
+    "mean": 12.449,
+    "max": 44.467,
+    "n": 41
+  },
+  {
+    "metric": "SoC_at_start",
+    "category": "pack",
+    "unit": "%",
+    "min": 40.0,
+    "mean": 67.554,
+    "max": 100.0,
+    "n": 41
+  },
+  {
+    "metric": "Temp_at_start",
+    "category": "pack",
+    "unit": "degC",
+    "min": 2.1,
+    "mean": 13.715,
+    "max": 21.15,
+    "n": 41
+  },
+  {
+    "metric": "Recovery_time",
+    "category": "pack",
+    "unit": "s",
+    "min": 0.01,
+    "mean": 0.99,
+    "max": 1.51,
+    "n": 41
+  },
+  {
+    "metric": "V_pre_start",
+    "category": "pack",
+    "unit": "V",
+    "min": 9.8,
+    "mean": 12.283,
+    "max": 16.3,
+    "n": 164
+  },
+  {
+    "metric": "V_min_start",
+    "category": "pack",
+    "unit": "V",
+    "min": 7.5,
+    "mean": 10.894,
+    "max": 12.0,
+    "n": 164
+  },
+  {
+    "metric": "R_int",
+    "category": "PG1_est",
+    "unit": "mOhm",
+    "min": 1.481,
+    "mean": 3.994,
+    "max": 11.268,
+    "n": 41
+  },
+  {
+    "metric": "R_int",
+    "category": "PG2",
+    "unit": "mOhm",
+    "min": 1.412,
+    "mean": 2.826,
+    "max": 11.469,
+    "n": 41
+  },
+  {
+    "metric": "R_int",
+    "category": "PG3_est",
+    "unit": "mOhm",
+    "min": 1.414,
+    "mean": 2.815,
+    "max": 10.865,
+    "n": 41
+  },
+  {
+    "metric": "R_int",
+    "category": "PG4",
+    "unit": "mOhm",
+    "min": 1.414,
+    "mean": 2.815,
+    "max": 10.865,
+    "n": 41
+  }
+]
