@@ -400,6 +400,54 @@
     "n": 140
   },
   {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_cold_R_int_apparent_mohm_invalid",
+    "min": 0.0,
+    "mean": 0.2143,
+    "max": 1.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "crank_hot_R_int_apparent_mohm_invalid",
+    "min": 0.0,
+    "mean": 0.1357,
+    "max": 1.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "wakeup_load_1_R_int_mohm_invalid",
+    "min": 0.0,
+    "mean": 0.0,
+    "max": 0.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "wakeup_load_2_R_int_mohm_invalid",
+    "min": 0.0,
+    "mean": 0.9429,
+    "max": 1.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "driving_aux_load_1_R_int_est_mohm_invalid",
+    "min": 0.0,
+    "mean": 0.0,
+    "max": 0.0,
+    "n": 140
+  },
+  {
+    "source": "testday_features (SoC-sweep runs)",
+    "metric": "ramp_like_load_1_R_int_est_mohm_invalid",
+    "min": 0.0,
+    "mean": 0.0,
+    "max": 0.0,
+    "n": 140
+  },
+  {
     "source": "degradation_cycles",
     "metric": "discharge_ah",
     "min": 0.7947,
@@ -422,5 +470,53 @@
     "mean": 7.5663,
     "max": 18.1593,
     "n": 20
+  },
+  {
+    "source": "testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",
+    "metric": "crank_cold_R_int_apparent_mohm",
+    "min": 0.0,
+    "mean": 1.4516,
+    "max": 4.4284,
+    "n": 101
+  },
+  {
+    "source": "testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",
+    "metric": "crank_hot_R_int_apparent_mohm",
+    "min": 32.2781,
+    "mean": 236.8376,
+    "max": 808.4016,
+    "n": 112
+  },
+  {
+    "source": "testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",
+    "metric": "wakeup_load_1_R_int_mohm",
+    "min": 56.0749,
+    "mean": 448.6569,
+    "max": 1234.4051,
+    "n": 138
+  },
+  {
+    "source": "testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",
+    "metric": "wakeup_load_2_R_int_mohm",
+    "min": 2.5633,
+    "mean": 2.5633,
+    "max": 2.5633,
+    "n": 1
+  },
+  {
+    "source": "testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",
+    "metric": "driving_aux_load_1_R_int_est_mohm",
+    "min": 16.356,
+    "mean": 897.7135,
+    "max": 5550.0013,
+    "n": 132
+  },
+  {
+    "source": "testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",
+    "metric": "ramp_like_load_1_R_int_est_mohm",
+    "min": 35.4838,
+    "mean": 301.0544,
+    "max": 1262.2321,
+    "n": 131
   }
 ]

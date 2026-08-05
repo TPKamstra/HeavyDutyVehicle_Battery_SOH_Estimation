@@ -49,6 +49,18 @@ testday_features (SoC-sweep runs),block_c5_capacity_ah,0.9378,9.449,18.1593,140
 testday_features (SoC-sweep runs),block_c5_reached_cutoff,1.0,1.0,1.0,140
 testday_features (SoC-sweep runs),cutoff_hit,0.0,0.0643,1.0,140
 testday_features (SoC-sweep runs),soc_pct,21.0,75.0571,100.0,140
+testday_features (SoC-sweep runs),crank_cold_R_int_apparent_mohm_invalid,0.0,0.2143,1.0,140
+testday_features (SoC-sweep runs),crank_hot_R_int_apparent_mohm_invalid,0.0,0.1357,1.0,140
+testday_features (SoC-sweep runs),wakeup_load_1_R_int_mohm_invalid,0.0,0.0,0.0,140
+testday_features (SoC-sweep runs),wakeup_load_2_R_int_mohm_invalid,0.0,0.9429,1.0,140
+testday_features (SoC-sweep runs),driving_aux_load_1_R_int_est_mohm_invalid,0.0,0.0,0.0,140
+testday_features (SoC-sweep runs),ramp_like_load_1_R_int_est_mohm_invalid,0.0,0.0,0.0,140
 degradation_cycles,discharge_ah,0.7947,5.2634,12.8034,180
 degradation_cycles,charge_ah,0.7722,5.1744,15.1748,200
 "soh_history (per block, C/5)",block_c5_capacity_ah,0.9378,7.5663,18.1593,20
+"testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",crank_cold_R_int_apparent_mohm,0.0,1.4516,4.4284,101
+"testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",crank_hot_R_int_apparent_mohm,32.2781,236.8376,808.4016,112
+"testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",wakeup_load_1_R_int_mohm,56.0749,448.6569,1234.4051,138
+"testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",wakeup_load_2_R_int_mohm,2.5633,2.5633,2.5633,1
+"testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",driving_aux_load_1_R_int_est_mohm,16.356,897.7135,5550.0013,132
+"testday_features (SoC-sweep runs) [filtered: >=0, and |I_peak|>=1A where available]",ramp_like_load_1_R_int_est_mohm,35.4838,301.0544,1262.2321,131

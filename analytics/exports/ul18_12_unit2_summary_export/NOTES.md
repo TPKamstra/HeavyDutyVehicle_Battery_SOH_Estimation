@@ -43,6 +43,26 @@ end) as the battery's usable OCV range narrows with capacity — confirmed
 physically consistent (Block 20 sweeps only 12.37–13.50 V with <1 Ah total
 capacity), not missing data.
 
+4. **Crank/wakeup R_int outliers, flagged 2026-08-06.** Crank currents logged
+   across the *entire* campaign are low (~0.3–10 A, vs. the ~55–75 A the v2
+   profile spec describes) — likely the crank simulator applying a
+   bench/validation-scale load rather than a real starter-motor-scale one.
+   `crank_cold_R_int_apparent_mohm`/`crank_hot_R_int_apparent_mohm` now carry
+   `_invalid` flag columns (negative reading, or |I_peak| < 1 A — both
+   physically/numerically indefensible); `summary_stats.csv` has matching
+   `[filtered: ...]` rows. Even filtered, hot-crank R_int keeps a wide tail
+   (up to 808 mΩ, concentrated in blocks 11–12) that survives because those
+   readings have nonzero current and a large real voltage drop — possibly a
+   genuine "severely degraded cell collapses even under a small load" finding
+   rather than noise; treat as a discussion point, not a solved problem.
+   Separately, **`wakeup_load_2_R_int_mohm` is negative in 132 of 133 rows** —
+   don't cite it, it's not usable as currently computed (probably a
+   reference-voltage bug in `testday_v2_features.py`, not fixed here).
+   `driving_aux_load_1_R_int_est_mohm`/`ramp_like_load_1_R_int_est_mohm` have
+   no per-row current to filter on the same way (slope-fit estimates, not
+   discrete pulses) — use their median, not mean/max, if citing. Full writeup:
+   `../RESULTS_SUMMARY_FOR_PAPER.md` §1.
+
 ## Chart images: fixed, now included (see boxer NOTES.md for the saga)
 
 Earlier attempts to render PNGs hung indefinitely — traced (after a lot of dead
@@ -56,7 +76,8 @@ environment (`plotly` 6.7.0 + `kaleido` 1.3.0) works fine — run this script wi
 - `summary_stats.csv` / `.json` — flat, one row per metric, across
   `testday_features`, `degradation_cycles`, and `soh_history`.
 - `testday_features.csv` — 140 SoC-sweep test-day runs, full event-derived
-  feature set (crank R_int, wakeup sag, alternator charge ratio, etc.).
+  feature set (crank R_int, wakeup sag, alternator charge ratio, etc.), plus
+  `*_invalid` flag columns on the R_int-type features (see note 4 above).
 - `degradation_cycles.csv` — 200 rows (20 blocks × 10 cycles), Ah + coulombic
   efficiency + completeness flags.
 - `soh_history.csv` — 20 rows, one per block, measured C/5 capacity.

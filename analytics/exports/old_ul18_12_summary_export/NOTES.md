@@ -14,11 +14,21 @@ column alongside it) or measurement noise around a baseline that wasn't itself
 fully representative. Not investigated further here — flagged for whoever
 consumes this next.
 
-**Expect early cutoff-voltage hits in the SoC sweep at low SoC.** `soc_sweep.csv`'s
-`DCIR_dis [mΩ]` ranges up to **1802.8 mΩ** (vs. a healthy cell's low tens of mΩ) —
-this is the known, expected signature of testing a heavily degraded cell down to
-low SoC, not an error. See project memory `project_phd_picode` for the original
-finding (~8 Ah measured on a full C/5 discharge against the 18 Ah nameplate).
+**Expect early cutoff-voltage hits in the SoC sweep at low SoC** — the known,
+expected signature of testing a heavily degraded cell down to low SoC. See
+project memory `project_phd_picode` for the original finding (~8 Ah measured
+on a full C/5 discharge against the 18 Ah nameplate).
+
+**Correction/refinement (2026-08-06):** `soc_sweep.csv`'s `DCIR_dis [mΩ]`
+reaching **1802.8 mΩ** is *not itself* a degradation signature — it's a
+measurement artifact. DCIR = ΔV/I, and this dataset's DCIR correlates
+**r = -0.85** with peak pulse current: pulses below 15 A average 1208 mΩ
+(noise-dominated), pulses at/above it average 166 mΩ (credible). Both the
+per-row `soc_sweep.csv`/`degradation_trends.csv` (via a new
+`DCIR_dis [mΩ]_low_current_flag` column) and `summary_stats.csv` (via
+additional `[filtered: |I_peak| >= 15A]` rows) now carry this distinction —
+**use the filtered numbers for any DCIR comparison or chart.** See
+`../RESULTS_SUMMARY_FOR_PAPER.md` §1 for the full writeup and numbers.
 
 **The v2 event-scripted test-day profile only partially rolled out to this
 battery.** `testday_v2_beta_partial.csv` has only **8 rows**, all from
@@ -47,7 +57,8 @@ fine; static export doesn't), so these two use the cycle-count x-axis instead.
 ## What *is* in this export
 
 - `summary_stats.csv` / `.json` — flat, one row per metric, across all four of the
-  dashboard's computed result tables (tagged by `source`).
+  dashboard's computed result tables (tagged by `source`); DCIR_dis has both
+  unfiltered and `[filtered: |I_peak| >= 15A]` rows (see the correction above).
 - `degradation_trends.csv` — one row per `testday_run` session (19 sessions,
   post-2026-01-27 cutoff), pulse-detected DCIR/SoC/temp/etc.
 - `soh_history.csv` — one row per valid `discharge_c5` file (13 files), capacity/SOH%.

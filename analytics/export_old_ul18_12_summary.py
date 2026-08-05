@@ -45,6 +45,15 @@ _EXCLUDE = {
     "v2": {"battery_id", "block", "kind", "timestamp", "filename"},
 }
 
+# DCIR = |ΔV| / |I|, so a pulse with small peak current turns ordinary voltage
+# measurement noise into a wildly inflated "resistance." In this dataset DCIR_dis
+# correlates -0.85 with |I_peak| (soc_sweep.csv): pulses below this floor average
+# ~1208 mΩ, pulses at/above it average ~166 mΩ — a real bimodal split, not a
+# continuous distribution with a long tail. Flagged, not dropped: the per-row
+# CSVs keep a `_low_current_flag` column, and summary_stats.csv reports both the
+# unfiltered and the filtered (>= threshold) view so nothing is silently lost.
+DCIR_CURRENT_THRESHOLD_A = 15.0
+
 
 def numeric_summary_rows(df: pd.DataFrame, source: str, exclude: set) -> list:
     rows = []
@@ -62,6 +71,27 @@ def numeric_summary_rows(df: pd.DataFrame, source: str, exclude: set) -> list:
     return rows
 
 
+def add_low_current_flag(df: pd.DataFrame, dcir_col: str, current_col: str,
+                          threshold: float = DCIR_CURRENT_THRESHOLD_A) -> pd.DataFrame:
+    if dcir_col in df.columns and current_col in df.columns:
+        df[f"{dcir_col}_low_current_flag"] = df[current_col].abs() < threshold
+    return df
+
+
+def filtered_summary_row(df: pd.DataFrame, dcir_col: str, flag_col: str, source: str) -> dict | None:
+    if dcir_col not in df.columns or flag_col not in df.columns:
+        return None
+    clean = df.loc[~df[flag_col], dcir_col].dropna()
+    if clean.empty:
+        return None
+    return {
+        "source": f"{source} [filtered: |I_peak| >= {DCIR_CURRENT_THRESHOLD_A:.0f}A]",
+        "metric": dcir_col,
+        "min": round(float(clean.min()), 4), "mean": round(float(clean.mean()), 4),
+        "max": round(float(clean.max()), 4), "n": int(len(clean)),
+    }
+
+
 def main():
     written = []
 
@@ -70,12 +100,23 @@ def main():
     bfd._compute_soh()   # after sweep, so SOH<->sweep cross-linking is complete
     bfd._scan_v2()
 
+    # Low-current DCIR flag (see DCIR_CURRENT_THRESHOLD_A above) — added to the
+    # per-row tables before they're written out, so the flag ships with the data.
+    bfd._TREND_DF = add_low_current_flag(bfd._TREND_DF, "DCIR_dis [mΩ]", "I_dis_peak [A]")
+    bfd._SWEEP_DF = add_low_current_flag(bfd._SWEEP_DF, "DCIR_dis [mΩ]", "I_peak_dis [A]")
+
     # 1 — flat summary stats across all four computed result tables
     rows = []
     rows += numeric_summary_rows(bfd._TREND_DF, "degradation_trends (testday_run sessions)", _EXCLUDE["trend"])
     rows += numeric_summary_rows(bfd._SOH_DF, "soh_history (discharge_c5 files)", _EXCLUDE["soh"])
     rows += numeric_summary_rows(bfd._SWEEP_DF, "soc_sweep (SoCsweep/Block testday runs)", _EXCLUDE["sweep"])
     rows += numeric_summary_rows(bfd._V2_DF, "testday_v2_beta (partial rollout, 2026-07-02/03 only)", _EXCLUDE["v2"])
+
+    for df, source in [(bfd._TREND_DF, "degradation_trends (testday_run sessions)"),
+                        (bfd._SWEEP_DF, "soc_sweep (SoCsweep/Block testday runs)")]:
+        r = filtered_summary_row(df, "DCIR_dis [mΩ]", "DCIR_dis [mΩ]_low_current_flag", source)
+        if r is not None:
+            rows.append(r)
 
     csv_path = os.path.join(OUT_DIR, "summary_stats.csv")
     pd.DataFrame(rows).to_csv(csv_path, index=False)

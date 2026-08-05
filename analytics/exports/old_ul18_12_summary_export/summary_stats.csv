@@ -17,6 +17,7 @@ degradation_trends (testday_run sessions),Eta_c [%],58.8,88.1263,264.2,19
 degradation_trends (testday_run sessions),Temp [°C],20.4,22.4789,24.41,19
 degradation_trends (testday_run sessions),Humidity [%],30.7,40.3316,49.0,19
 degradation_trends (testday_run sessions),cycle,0.0,70.5263,130.0,19
+degradation_trends (testday_run sessions),DCIR_dis [mΩ]_low_current_flag,0.0,0.4737,1.0,19
 soh_history (discharge_c5 files),capacity_ah,5.5962,10.219,14.0844,13
 soh_history (discharge_c5 files),v_final,10.7765,10.7918,10.7931,13
 soh_history (discharge_c5 files),temp_c,20.4,22.8577,25.99,13
@@ -39,6 +40,7 @@ soc_sweep (SoCsweep/Block testday runs),CA_dVdt [mV/s],-2.31,-0.17,2.08,5
 soc_sweep (SoCsweep/Block testday runs),Temp [°C],24.0,26.0928,27.9,47
 soc_sweep (SoCsweep/Block testday runs),Humidity [%],52.1,58.9021,63.0,47
 soc_sweep (SoCsweep/Block testday runs),linked_soh_pct,43.7,47.0,50.3,18
+soc_sweep (SoCsweep/Block testday runs),DCIR_dis [mΩ]_low_current_flag,0.0,0.5106,1.0,47
 "testday_v2_beta (partial rollout, 2026-07-02/03 only)",ocv_label_V,12.55,12.6725,13.28,8
 "testday_v2_beta (partial rollout, 2026-07-02/03 only)",rest_baseline_Vmean,12.552,12.6703,13.244,8
 "testday_v2_beta (partial rollout, 2026-07-02/03 only)",ocv_window_Vpre,12.552,12.6706,13.227,8
@@ -74,3 +76,5 @@ soc_sweep (SoCsweep/Block testday runs),linked_soh_pct,43.7,47.0,50.3,18
 "testday_v2_beta (partial rollout, 2026-07-02/03 only)",min_voltage,9.743,10.1795,13.094,8
 "testday_v2_beta (partial rollout, 2026-07-02/03 only)",final_voltage,12.543,12.6507,13.177,8
 "testday_v2_beta (partial rollout, 2026-07-02/03 only)",cutoff_hit,0.0,0.0,0.0,8
+degradation_trends (testday_run sessions) [filtered: |I_peak| >= 15A],DCIR_dis [mΩ],42.5,52.531,56.67,10
+soc_sweep (SoCsweep/Block testday runs) [filtered: |I_peak| >= 15A],DCIR_dis [mΩ],47.73,165.8526,571.05,23

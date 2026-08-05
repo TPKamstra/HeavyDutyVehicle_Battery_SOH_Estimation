@@ -5,6 +5,7 @@ crank_hot_I_peak_A,0.911,19,0.92,18
 driving_aux_load_1_V_std,-0.919,19,-0.905,18
 alternator_charge_after_cold_Ah,0.854,19,0.895,18
 total_ah_charged,0.856,19,0.891,18
+crank_hot_R_int_apparent_mohm_invalid,-0.835,19,-0.873,18
 crank_cold_I_peak_A,0.73,19,0.779,18
 total_ah_discharged,0.712,19,0.748,18
 wakeup_load_1_sag_V,-0.682,19,-0.664,18
@@ -15,6 +16,7 @@ ramp_like_load_1_V_std,0.507,19,0.472,18
 wakeup_load_2_sag_V,-0.512,19,-0.437,18
 crank_hot_R_int_apparent_mohm,-0.316,19,-0.35,18
 driving_aux_load_1_R_int_est_mohm,-0.24,19,-0.29,18
+crank_cold_R_int_apparent_mohm_invalid,-0.146,19,-0.29,18
 recovery_after_hot_V_plus30s,0.365,19,0.261,18
 crank_hot_V_pre,0.337,19,0.228,18
 ramp_like_load_1_V_mean,0.305,19,0.22,18
@@ -27,7 +29,7 @@ glow_plug_like_load_1_Vmean,0.177,19,0.117,18
 driving_aux_load_1_V_mean,-0.046,19,-0.096,18
 ramp_like_load_1_R_int_est_mohm,-0.011,19,-0.044,18
 crank_cold_V_pre,0.089,19,0.03,18
-crank_cold_V_min,0.084,19,0.024,18
 crank_cold_V_sustained,0.084,19,0.024,18
-min_voltage,0.081,19,0.02,18
+crank_cold_V_min,0.084,19,0.024,18
 final_voltage,-0.03,19,0.02,18
+min_voltage,0.081,19,0.02,18

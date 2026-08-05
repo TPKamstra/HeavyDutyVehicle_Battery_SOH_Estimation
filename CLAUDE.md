@@ -15,6 +15,16 @@ from operational vehicles to check whether those features transfer.
 
 ## For filling in the paper's Results section (`\label{sec:results}`)
 
+**Start with `analytics/exports/RESULTS_SUMMARY_FOR_PAPER.md`** — a guided
+tour of every export with headline numbers ready to cite, an explanation of
+an impedance/R_int outlier-filtering pass (2026-08-06: DCIR/R_int values were
+blowing up on near-zero-current pulses in both lab datasets — now flagged,
+not silently dropped — plus one feature, `wakeup_load_2_R_int_mohm`, found to
+be unusable as currently computed), and a concrete breakdown of what's needed
+to compute the full lab feature set on field data (short version: a measured
+current sensor on the field battery, and an event-segmentation pipeline to
+replace the lab's explicit scripted-event log — neither exists yet).
+
 As of the last main.tex sync, Results/Discussion/Conclusion are `\todo{}`
 placeholders. The suggested structure (5.1 lab, 5.2 field, 5.3 lab-vs-field
 comparison) maps directly onto what's already in `analytics/exports/`:

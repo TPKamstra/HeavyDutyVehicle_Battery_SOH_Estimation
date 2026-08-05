@@ -144,6 +144,14 @@
     "n": 19
   },
   {
+    "source": "degradation_trends (testday_run sessions)",
+    "metric": "DCIR_dis [mΩ]_low_current_flag",
+    "min": 0.0,
+    "mean": 0.4737,
+    "max": 1.0,
+    "n": 19
+  },
+  {
     "source": "soh_history (discharge_c5 files)",
     "metric": "capacity_ah",
     "min": 5.5962,
@@ -318,6 +326,14 @@
     "mean": 47.0,
     "max": 50.3,
     "n": 18
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs)",
+    "metric": "DCIR_dis [mΩ]_low_current_flag",
+    "min": 0.0,
+    "mean": 0.5106,
+    "max": 1.0,
+    "n": 47
   },
   {
     "source": "testday_v2_beta (partial rollout, 2026-07-02/03 only)",
@@ -598,5 +614,21 @@
     "mean": 0.0,
     "max": 0.0,
     "n": 8
+  },
+  {
+    "source": "degradation_trends (testday_run sessions) [filtered: |I_peak| >= 15A]",
+    "metric": "DCIR_dis [mΩ]",
+    "min": 42.5,
+    "mean": 52.531,
+    "max": 56.67,
+    "n": 10
+  },
+  {
+    "source": "soc_sweep (SoCsweep/Block testday runs) [filtered: |I_peak| >= 15A]",
+    "metric": "DCIR_dis [mΩ]",
+    "min": 47.73,
+    "mean": 165.8526,
+    "max": 571.05,
+    "n": 23
   }
 ]

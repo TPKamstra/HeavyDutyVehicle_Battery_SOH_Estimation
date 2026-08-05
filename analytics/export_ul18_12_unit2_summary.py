@@ -57,15 +57,72 @@ def numeric_summary_rows(df: pd.DataFrame, source: str, exclude: set) -> list:
     return rows
 
 
+# Crank currents logged in this whole campaign are far below the ~55-75A the
+# v2 profile spec describes (observed range ~0.3-10A throughout — this looks
+# like a low-current bench/validation load on the crank simulator, not a real
+# starter-motor-scale load; see NOTES.md). That means a bimodal "good vs bad"
+# current split (as used for old_ul18_12's DCIR, at 15A) doesn't apply here —
+# the entire range is low. Two things ARE unambiguous regardless of that:
+# R_int_apparent = (V_pre - V_min) / I_peak can never be negative (a negative
+# reading here means V_min > V_pre, i.e. voltage rose during a "discharge"
+# window — noise, not a real resistance), and readings from a near-zero
+# current are the least trustworthy of the bunch even within this already-low
+# range. Both flagged (not dropped) via `_invalid` columns.
+CRANK_MIN_CURRENT_A = 1.0
+
+
+def add_r_int_validity_flag(df: pd.DataFrame, r_col: str, i_col: str | None = None,
+                             min_current: float = CRANK_MIN_CURRENT_A) -> pd.DataFrame:
+    if r_col not in df.columns:
+        return df
+    invalid = df[r_col] < 0
+    if i_col is not None and i_col in df.columns:
+        invalid = invalid | (df[i_col].abs() < min_current)
+    df[f"{r_col}_invalid"] = invalid
+    return df
+
+
+def filtered_summary_row(df: pd.DataFrame, col: str, flag_col: str, source: str, label: str) -> dict | None:
+    if col not in df.columns or flag_col not in df.columns:
+        return None
+    clean = df.loc[~df[flag_col], col].dropna()
+    if clean.empty:
+        return None
+    return {
+        "source": f"{source} [filtered: {label}]", "metric": col,
+        "min": round(float(clean.min()), 4), "mean": round(float(clean.mean()), 4),
+        "max": round(float(clean.max()), 4), "n": int(len(clean)),
+    }
+
+
 def main():
     written = []
     d._rescan()
+
+    # R_int validity flags (see CRANK_MIN_CURRENT_A above) — crank columns get
+    # both the negative-value and low-current checks (a paired I_peak column
+    # exists); the other R_int-style columns only have the negative check,
+    # since no per-row peak-current column is exported for those events.
+    d._DATASET = add_r_int_validity_flag(d._DATASET, "crank_cold_R_int_apparent_mohm", "crank_cold_I_peak_A")
+    d._DATASET = add_r_int_validity_flag(d._DATASET, "crank_hot_R_int_apparent_mohm", "crank_hot_I_peak_A")
+    for col in ["wakeup_load_1_R_int_mohm", "wakeup_load_2_R_int_mohm",
+                "driving_aux_load_1_R_int_est_mohm", "ramp_like_load_1_R_int_est_mohm"]:
+        d._DATASET = add_r_int_validity_flag(d._DATASET, col)
 
     # 1 — flat summary stats
     rows = []
     rows += numeric_summary_rows(d._DATASET, "testday_features (SoC-sweep runs)", _EXCLUDE["testday"])
     rows += numeric_summary_rows(d._DEGR_DF, "degradation_cycles", _EXCLUDE["degr"])
     rows += numeric_summary_rows(d._SOH_DF, "soh_history (per block, C/5)", _EXCLUDE["soh"])
+
+    for col in ["crank_cold_R_int_apparent_mohm", "crank_hot_R_int_apparent_mohm",
+                "wakeup_load_1_R_int_mohm", "wakeup_load_2_R_int_mohm",
+                "driving_aux_load_1_R_int_est_mohm", "ramp_like_load_1_R_int_est_mohm"]:
+        r = filtered_summary_row(d._DATASET, col, f"{col}_invalid",
+                                  "testday_features (SoC-sweep runs)",
+                                  f">=0, and |I_peak|>={CRANK_MIN_CURRENT_A:.0f}A where available")
+        if r is not None:
+            rows.append(r)
 
     csv_path = os.path.join(OUT_DIR, "summary_stats.csv")
     pd.DataFrame(rows).to_csv(csv_path, index=False)

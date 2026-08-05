@@ -8,10 +8,12 @@ analytics/ul18_12_unit2/
 analytics/Backup/
 
 # Dashboards' own ad-hoc Excel/PNG/HTML export-button output — not committed,
-# but the curated *_summary_export/ bundles (small, static, dataset-free) are.
+# but the curated *_summary_export/ bundles (small, static, dataset-free) are,
+# and so is the cross-cutting results writeup at the top of exports/.
 analytics/exports/*
 !analytics/exports/*_summary_export/
 !analytics/exports/*_summary_export/**
+!analytics/exports/RESULTS_SUMMARY_FOR_PAPER.md
 
 # Python
 __pycache__/

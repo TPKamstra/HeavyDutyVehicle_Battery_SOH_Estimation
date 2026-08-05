@@ -2,6 +2,7 @@ feature,r_soc,r_this_block,r_next_block,n_next,quality
 driving_aux_load_1_V_std,0.247,-0.919,-0.905,18,0.658
 wakeup_load_1_sag_V,0.094,-0.682,-0.664,18,0.57
 alternator_charge_after_cold_Ah,-0.535,0.854,0.895,18,0.36
+crank_hot_R_int_apparent_mohm_invalid,0.538,-0.835,-0.873,18,0.335
 crank_hot_R_int_apparent_mohm,0.037,-0.316,-0.35,18,0.313
 crank_cold_I_peak_A,-0.571,0.73,0.779,18,0.208
 run_duration_s,-0.007,-0.239,-0.203,18,0.196
@@ -22,6 +23,7 @@ rest_baseline_Vmean,0.989,-0.909,-0.936,18,-0.053
 crank_hot_V_sustained,0.179,0.161,0.119,18,-0.06
 glow_plug_like_load_1_Vmean,0.181,0.177,0.117,18,-0.064
 crank_hot_V_min,0.208,0.209,0.131,18,-0.077
+crank_cold_R_int_apparent_mohm_invalid,0.417,-0.146,-0.29,18,-0.127
 crank_cold_V_pre,0.17,0.089,0.03,18,-0.14
 driving_aux_load_1_R_int_est_mohm,0.448,-0.24,-0.29,18,-0.158
 crank_cold_V_sustained,0.184,0.084,0.024,18,-0.16
