@@ -90,41 +90,47 @@ imbalance metric (no lab equivalent — lab units are single batteries).
 There's no cold/hot distinction, no wakeup-load phase, no alternator-charge
 phase, no variable-current segment.
 
-**What closing this gap needs — three separate things, in order of how hard
-each is:**
-1. **Event segmentation.** A real vehicle doesn't play a scripted profile, so
-   there's no `Event_Type` column to group by. The equivalent would have to
-   be *inferred* from other signals — RPM crossing a threshold for crank
-   start/stop, ignition state for wakeup/rest boundaries, time-since-last-start
-   to label cold vs. hot. This is buildable (it's the same idea as the lab's
-   event script, just detected rather than scripted) but is new code, not a
-   config change — nothing in this repo does it yet.
-2. **A measured current signal.** The lab's R_int is trustworthy (after §1's
-   filtering) because current is genuinely measured per event. Standard
-   vehicle CAN typically does **not** carry battery current unless the
-   vehicle has a smart/intelligent battery sensor (IBS) on the bus. Without
-   one, only a voltage-drop-based proxy (what boxer already has, with the
-   "assumed current" caveat above) is possible — the alternator-charge-ratio
-   and driving-load-droop-curve features specifically cannot be computed at
-   all without real current.
-3. **A rawer data source than what's currently available.** `boxer`'s data
-   (`dataset_boxer/start_data_battery/my_start_csv/`) is *already* a small,
-   pre-extracted per-start feature table, not a raw CAN/telemetry log — there
-   is currently no more-granular field dataset checked into this repo or
-   found elsewhere on the analysis machine to re-derive additional features
-   from. (A much larger, separate "CANbusProject" research area exists on
-   the PhD OneDrive with what looks like genuine raw field logs, e.g.
-   `Energy_Management_Boxer11.csv` — but it's a discrete state/event log,
-   not a voltage/current time series, and hasn't been connected to this
-   pipeline. If raw CAN data is obtained, item 1 above is where that work
-   would start — see the exchange in this project's chat history for the
-   design sketch of a `can_bus_features.py`-style module.)
+**Update (2026-08-06) — largely closed.** A second, much richer field dataset
+has since landed: `analytics/dataset_boxer_can/` + `build_boxer_can_features.py`
++ `boxer_can_dashboard.py` (7 CAN taps, 826 starts, not reviewed in detail by
+this analysis pass — added after this document was first written). Its
+feature table already has what §2 originally said was missing:
+- **Real measured current** (`I_pre_A`, `I_load_A`, `delta_I_A`) — not an
+  assumed constant like the old 41-start `boxer` dataset, so its R_int
+  columns (it has three: `R_internal_est_ohm_pack`,
+  `..._min_voltage_method_pack`, `..._from_ocv_pack`) are genuinely
+  independent measurements, not a rescaling of V_drop. **Given §1's finding
+  that current-derived R_int is exactly the metric prone to low-current
+  blowup, apply the same diagnostic (correlate R_int against `I_load_A`,
+  check for a bimodal split) to this dataset before citing its R_int range —
+  don't assume it's clean just because current is now measured.**
+- **Explicit event timing from CAN commands** (`t_starting_cmd_s`,
+  `t_glow_plug_s`, `t_running_cmd_s`, `crank_duration_s`, `glow_lead_s`) —
+  not the lab's row-level `Event_Type`/`Event_Index`, but genuine
+  event-boundary timestamps, which is the hard part of what item 1 below
+  used to ask for.
+- **`post_start_V_mean/std`** — the commit message for this dataset
+  explicitly calls this out as "the field analogue of the lab's
+  `driving_aux_load_1_V_std`, the strongest SoC-robust lab feature" (§3
+  above) — i.e. the single most important feature for a lab-to-field
+  comparison is now computable on both sides.
+- **`t_since_previous_start_s`** — enables a cold/hot crank distinction
+  (time since the engine was last running), the one thing the old field
+  dataset couldn't do at all.
 
-**Bottom line for the paper:** full feature parity isn't a matter of running
-more analysis on the existing field export — the field export doesn't carry
-the raw signal resolution needed. It requires new field instrumentation
-(current sensor) and a new segmentation pipeline, applied to a rawer data
-source than what's in this repo today.
+What (probably) still doesn't carry over: the lab's two-stage `wakeup_load`
+phase and the `alternator_charge` return-ratio — check whether any of
+`t_before_s`/`t_after_s`/`n_*_samples` in the new feature table map onto
+those, but nothing in the column list above obviously does.
+
+**Original gap analysis (kept for context on what was true before this
+dataset arrived):**
+1. **Event segmentation** — now largely provided by the CAN-command
+   timestamps above, rather than needing to be inferred from RPM/ignition as
+   originally guessed.
+2. **A measured current signal** — now present (`I_pre_A`/`I_load_A`).
+3. **A rawer data source** — this *is* that rawer source; the old 41-start
+   `boxer` dataset was the pre-extracted one being described as insufficient.
 
 ## 3. Headline numbers, ready to cite
 
