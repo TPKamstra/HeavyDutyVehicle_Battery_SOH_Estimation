@@ -1,0 +1,4 @@
+start_index,start_time,can_tapper_id,event_time,t_rel,event_label,source_subfunction,source_subsub,event_color
+0,2021-12-02 14:07:38.655817,can_tapper11,2021-12-02 14:07:38.655817,0.0,Engine starting command,Engine Status,status,"rgb(228,26,28)"
+0,2021-12-02 14:07:38.655817,can_tapper11,2021-12-02 14:07:38.883884,0.228067,Glow plugs preheating,Engine Heater Glow Plugs Status,Engine Heater Glow Plugs,"rgb(228,26,28)"
+0,2021-12-02 14:07:38.655817,can_tapper11,2021-12-02 14:07:40.337935,1.682118,Engine running command,Engine Status,status,"rgb(228,26,28)"
