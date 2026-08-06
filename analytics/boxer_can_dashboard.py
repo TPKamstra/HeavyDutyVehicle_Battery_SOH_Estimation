@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Boxer Battery — Motor-Start CAN Export Dashboard
-7 CAN taps (can_tapper11/30/31/32/33/34/35), 826 engine starts total.
+15 CAN taps, ~4800 engine starts total (tapper count grows as more taps are
+uploaded -- tapper colours are assigned dynamically below, not hardcoded).
 
 Reads the small, committed tables in dataset_boxer_can/ (produced by
 build_boxer_can_features.py from the original motor_starts_can_tapper*.zip
@@ -25,11 +26,8 @@ pn.extension("plotly", "tabulator")
 
 DATASHEET_IR_MOHM = 1.6  # mΩ AC internal resistance per battery (new, datasheet) -- same pack as dataset_boxer
 
-TAPPER_COLOURS = {
-    "can_tapper11": "#1f77b4", "can_tapper30": "#EF553B", "can_tapper31": "#2ca02c",
-    "can_tapper32": "#FF7F0E", "can_tapper33": "#AB63FA", "can_tapper34": "#00CC96",
-    "can_tapper35": "#636EFA",
-}
+# TAPPER_COLOURS is assigned dynamically below, once the actual set of
+# tappers present in the data is known (see _load() / TAPPERS).
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset_boxer_can")
 
@@ -57,6 +55,15 @@ def _load():
 
 FEAT, FEAT_PK, EX_TRACE, EX_EVENTS = _load()
 TAPPERS = sorted(FEAT["can_tapper_id"].unique())
+
+# Qualitative palette, cycled if there are ever more tappers than colours --
+# avoids a hardcoded dict silently falling back to no colour for new taps.
+_PALETTE = (
+    "#1f77b4", "#EF553B", "#2ca02c", "#FF7F0E", "#AB63FA", "#00CC96", "#636EFA",
+    "#FFA15A", "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#8C564B", "#17BECF",
+    "#E377C2",
+)
+TAPPER_COLOURS = {tap: _PALETTE[i % len(_PALETTE)] for i, tap in enumerate(TAPPERS)}
 
 
 # ── Tab 1: Representative start, with CAN "commando" event markers ──────────
@@ -107,7 +114,7 @@ def _build_start_fig():
     return fig
 
 
-# ── Tab 2: Feature trends across all 826 starts, coloured by tapper ─────────
+# ── Tab 2: Feature trends across all starts, coloured by tapper ────────────
 
 def _build_trends_fig():
     f = FEAT.sort_values("start_time")
@@ -179,7 +186,7 @@ def _build_tapper_fig():
     )
     fig.update_layout(
         height=520, template="plotly_white",
-        title="Per-Tap Comparison — 7 CAN Taps",
+        title=f"Per-Tap Comparison — {len(TAPPERS)} CAN Taps",
         legend=dict(orientation="h", y=-0.22, x=0.15),
         margin=dict(t=80, b=100),
     )
@@ -420,17 +427,20 @@ def _build_summary():
         tap_rows += f"| {tap} | {len(sub)} | {sub['start_time'].dt.date.min()} | {sub['start_time'].dt.date.max()} |\n"
 
     md = f"""
-## Boxer Motor-Start CAN Export — 7 Taps, {n_events} Starts
+## Boxer Motor-Start CAN Export — {len(TAPPERS)} Taps, {n_events} Starts
 
 **Window per start:** 60s before .. 120s after (`tb60_ta120`) | **Commando markers:** Engine starting command, Glow plugs preheating, Engine running command
 **Date range (all taps):** {t_min} -- {t_max}
 
-Same pack as the original 41-start dataset (can_tapper11 IS that dataset — identical start-for-start).
-This export adds 6 more taps (785 more starts) plus CAN commando event timing and a new
-post-start voltage-stability feature (`post_start_V_std`), which is the field-side analogue of
+Same pack as the original 41-start dataset used in the paper's Results section 5.2
+(can_tapper11 IS that dataset — identical start-for-start). This export adds {len(TAPPERS) - 1}
+more taps ({n_events - 41} more starts) plus CAN commando event timing and a new post-start
+voltage-stability feature (`post_start_V_std`), which is the field-side analogue of
 `driving_aux_load_V_std` — the strongest SoC-robust indicator found in the lab campaign
-(Section 5.1 of the paper). The 41-start dataset used in the paper's Results section 5.2 could not
-test this, since it only ever captured crank-window features.
+(Section 5.1 of the paper). The original 41-start dataset could not test this, since it only
+ever captured crank-window features. Some taps (currently can_tapper14/15) arrived split across
+multiple zip exports covering different date ranges (a single export got too large); these are
+merged per-tap by build_boxer_can_features.py before this dashboard ever sees them.
 
 **Note on units:** `V_pre_total_1_10V` in features.csv is the *sum* of all four battery-group
 voltages (~2x a single 12V-class group), not the vehicle's real CAN "Total Voltage" signal.
@@ -442,7 +452,7 @@ directly comparable scale to `V_pre_1_10V`/`V_min_1_10V` in features_packs.csv.
 | Tap | Starts | First start | Last start |
 |---|---|---|---|
 {tap_rows}
-### Pack-level feature summary (all 826 starts)
+### Pack-level feature summary (all {n_events} starts)
 
 | Metric | Min | Mean | Max |
 |---|---|---|---|
@@ -485,7 +495,7 @@ tabs = pn.Tabs(
 )
 
 template = pn.template.FastListTemplate(
-    title="Boxer Battery — Motor-Start CAN Export (7 taps, 826 starts)",
+    title=f"Boxer Battery — Motor-Start CAN Export ({len(TAPPERS)} taps, {len(FEAT)} starts)",
     main=[_build_summary(), tabs],
     accent_base_color="#2C4F8C",
     header_background="#2C4F8C",

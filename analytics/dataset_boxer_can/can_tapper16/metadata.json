@@ -1,0 +1,51 @@
+{
+  "start_time_query": "2019-04-30_23:59:00.000000",
+  "end_time_query": "2026-05-31_00:02:00.000000",
+  "can_tapper_id": "can_tapper16",
+  "t_before_s": 60.0,
+  "t_after_s": 120.0,
+  "ocv_window_s": 30.0,
+  "ocv_guard_s": 5.0,
+  "grid_dt_ms": 20,
+  "merge_tolerance_s": 2.0,
+  "crank_window_s": 2.0,
+  "pre_window_s": [
+    -0.5,
+    -0.1
+  ],
+  "recovery_horizons_s": [
+    1.0,
+    2.0,
+    5.0,
+    10.0,
+    30.0,
+    60.0
+  ],
+  "fit_relaxation": true,
+  "invalid_as_nan": false,
+  "invalid_value_threshold": -30000.0,
+  "voltage_signals": [
+    "FM-Total Voltage in 1/10V",
+    "FM-Center Voltage PG2 in 1/10V",
+    "FM-Center Voltage PG4 in 1/10V"
+  ],
+  "temperature_signals": [
+    "Driving Module Battery Temperature in 1/10 Degree",
+    "Pool Temperature FM-Battery in 1/10 Degree"
+  ],
+  "current_signal": "Drive Module Batteries Charging Current in A",
+  "generated_at": "2026-08-06 00:42:30",
+  "row_counts": {
+    "features": 419,
+    "features_packs": 1676,
+    "start_metadata": 419,
+    "engine_events": 1339,
+    "voltage_series_raw": 808317,
+    "current_series_raw": 143145,
+    "temperature_series_raw": 173716,
+    "voltage_series_grid": 3771419,
+    "imbalance_series_grid": 15085676
+  },
+  "n_starts_detected": 845,
+  "n_starts_with_features": 419
+}
