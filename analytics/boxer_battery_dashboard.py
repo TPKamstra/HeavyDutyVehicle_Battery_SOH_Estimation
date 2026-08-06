@@ -352,16 +352,17 @@ def _build_summary():
 {gr_rows}
 *Note: PG1 & PG3 resistances are estimated from the pack-level measurement; PG2 & PG4 have direct centre-tap voltage sensors.*
     """
-    return pn.pane.Markdown(md, width=960, margin=(0, 20, 20, 20))
+    return pn.pane.Markdown(md, sizing_mode="stretch_width", margin=(0, 20, 20, 20))
 
 
 # ── Layout ────────────────────────────────────────────────────────────────────
 
 tabs = pn.Tabs(
-    ("Start Profile",       pn.pane.Plotly(_build_start_fig(),    config={"responsive": True})),
-    ("Feature Trends",      pn.pane.Plotly(_build_trends_fig(),   config={"responsive": True})),
-    ("Group Comparison",    pn.pane.Plotly(_build_group_fig(),    config={"responsive": True})),
-    ("SoC & Temp Effects",  pn.pane.Plotly(_build_soc_temp_fig(), config={"responsive": True})),
+    ("Start Profile",       pn.pane.Plotly(_build_start_fig(),    config={"responsive": True}, sizing_mode="stretch_width")),
+    ("Feature Trends",      pn.pane.Plotly(_build_trends_fig(),   config={"responsive": True}, sizing_mode="stretch_width")),
+    ("Group Comparison",    pn.pane.Plotly(_build_group_fig(),    config={"responsive": True}, sizing_mode="stretch_width")),
+    ("SoC & Temp Effects",  pn.pane.Plotly(_build_soc_temp_fig(), config={"responsive": True}, sizing_mode="stretch_width")),
+    sizing_mode="stretch_width",
 )
 
 template = pn.template.FastListTemplate(
@@ -370,6 +371,7 @@ template = pn.template.FastListTemplate(
     accent_base_color="#2C4F8C",
     header_background="#2C4F8C",
     header_color="#FFFFFF",
+    main_max_width="100%",
 )
 
 template.servable()

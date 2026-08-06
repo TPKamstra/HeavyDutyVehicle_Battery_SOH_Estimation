@@ -17,7 +17,11 @@ import panel as pn
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-pn.extension("plotly")
+from lab_field_feature_comparison import (
+    LAB_CSV, build_family_figure, build_matched_series, summary_table,
+)
+
+pn.extension("plotly", "tabulator")
 
 DATASHEET_IR_MOHM = 1.6  # mΩ AC internal resistance per battery (new, datasheet) -- same pack as dataset_boxer
 
@@ -239,6 +243,171 @@ def _build_poststart_fig():
     return fig
 
 
+# ── Tab 6: Outlier Inspector ──────────────────────────────────────────────────
+
+OUTLIER_FEATURES = {
+    "Voltage drop during crank (%)": "V_drop_total_pct",
+    "Pack internal resistance (mΩ)": "R_int_mohm",
+    "Post-start voltage std. dev. (V)": "post_start_V_std_V",
+}
+
+KNOWN_INCIDENTS_MD = """
+### Known data-quality incidents (found while reviewing this tab)
+
+**`can_tapper31` — current-sensing dropout, 2026-06-11 19:38 to 2026-06-12 21:52
+(start_index 388-404, 17 starts, ~26h window).** `I_load_A` collapses to single digits (-7 to 9 A)
+instead of the normal ~400 A crank current seen immediately before (start 387: 500 A) and after
+(start 405: 444 A) this window. `R_int_mohm` is computed as `ΔV / I_load`, so this tiny denominator
+produces meaningless values (up to 3200 mΩ) — **all 11 of the whole dataset's `R_int_mohm > 50 mΩ`
+outliers are from this one window on this one tap.** Voltage sample counts in the same window look
+normal (2158-2160 samples/start, matching elsewhere), so this looks like a temporary fault specific
+to the current channel rather than a general logging dropout. Root cause not confirmed from the
+analysis side.
+
+**`can_tapper33` — severe voltage-drop cluster, 2025-12-16 11:13-11:58
+(start_index 20-23, 4 starts, ~45 min window).** Pack-level voltage drop 44.6-54.9% (vs. a
+dataset-wide median of ~9%), during cold ambient temperature (4.3-6.5°C) with a *normal* crank
+current (380-500 A) — unlike the tapper31 incident, this looks like a real electrical event (all
+four pack groups sag together, not just one channel), consistent with a cold, weak battery under
+load rather than a sensor artifact. One point within it (start_index 21, group `PG1_est`) sags far
+more than its own siblings in the same start (83% vs. 44-46% for PG2/PG3_est/PG4) — `PG1_est` has
+no direct sensor (estimated from the pack-level signal, see the per-group note on the Feature Trends
+tab), so that specific extreme point should be treated with more suspicion than the other three.
+
+The controls below re-derive outlier flags live from the current data (not a hardcoded list of the
+starts above) — use them to check whether these incidents are still present after a re-export, or to
+look for new ones.
+"""
+
+
+def _flag_outliers(s: pd.Series, k: float = 3.0) -> pd.Series:
+    """Tukey far-out fence (k=3x IQR by default) -- same convention as the Lab vs
+    Field tab's axis capping, so 'outlier' means the same thing across this dashboard."""
+    q1, q3 = s.quantile([0.25, 0.75])
+    iqr = q3 - q1
+    if iqr == 0:
+        return pd.Series(False, index=s.index)
+    lo, hi = q1 - k * iqr, q3 + k * iqr
+    return (s < lo) | (s > hi)
+
+
+def _outlier_frame(feature_key: str, tap: str, k: float):
+    f = FEAT if tap == "All taps" else FEAT[FEAT["can_tapper_id"] == tap]
+    valid = f[feature_key].dropna()
+    mask = _flag_outliers(valid, k=k).reindex(f.index, fill_value=False)
+    return f, mask
+
+
+def _build_outlier_timeline(feature_key: str, tap: str, k: float) -> go.Figure:
+    f, mask = _outlier_frame(feature_key, tap, k)
+    label = next(lbl for lbl, key in OUTLIER_FEATURES.items() if key == feature_key)
+    normal, outliers = f[~mask], f[mask]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=normal["start_time"], y=normal[feature_key], mode="markers", name="Normal",
+        marker=dict(size=6, color=[TAPPER_COLOURS.get(t, "#888") for t in normal["can_tapper_id"]], opacity=0.6),
+        text=normal["can_tapper_id"], hovertemplate="%{text}<br>%{x}<br>%{y:.2f}<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=outliers["start_time"], y=outliers[feature_key], mode="markers", name=f"Outlier (n={len(outliers)})",
+        marker=dict(size=12, color="#e34948", symbol="circle-open", line=dict(width=2.5)),
+        text=outliers["can_tapper_id"], hovertemplate="%{text}<br>%{x}<br>%{y:.2f}<extra></extra>",
+    ))
+    fig.update_layout(
+        height=420, template="plotly_white",
+        title=f"{label} over time" + (f" — {tap}" if tap != "All taps" else " — all taps"),
+        xaxis_title="Start time", yaxis_title=label,
+        legend=dict(orientation="h", y=-0.2, x=0),
+        margin=dict(t=60, b=60),
+    )
+    return fig
+
+
+def _build_outlier_table(feature_key: str, tap: str, k: float) -> pn.widgets.Tabulator:
+    f, mask = _outlier_frame(feature_key, tap, k)
+    flagged = f[mask].sort_values("start_time").copy()
+    cols = ["start_index", "start_time", "can_tapper_id", feature_key, "I_load_A", "delta_I_A",
+            "V_pre_group_avg_V", "post_start_V_mean_V", "temp_avg_start_C", "soc_pct_est_pack"]
+    cols = [c for c in cols if c in flagged.columns]
+    flagged = flagged[cols].round(3)
+    return pn.widgets.Tabulator(
+        flagged, height=320, sizing_mode="stretch_width", page_size=15, disabled=True,
+        titles={"start_index": "Start #", "can_tapper_id": "Tap", feature_key: label_for_col(feature_key)},
+    )
+
+
+def label_for_col(feature_key: str) -> str:
+    return next(lbl for lbl, key in OUTLIER_FEATURES.items() if key == feature_key)
+
+
+def _build_outlier_group_table(feature_key: str, tap: str, k: float) -> pn.widgets.Tabulator:
+    f, mask = _outlier_frame(feature_key, tap, k)
+    flagged_keys = f[mask][["start_index", "can_tapper_id"]]
+    fp = FEAT_PK.merge(flagged_keys, on=["start_index", "can_tapper_id"], how="inner")
+    fp = fp.sort_values(["start_time", "group"])
+    cols = ["start_index", "start_time", "can_tapper_id", "group", "V_pre_1_10V", "V_min_1_10V",
+            "V_drop_pct", "R_int_mohm", "I_load_A"]
+    cols = [c for c in cols if c in fp.columns]
+    fp = fp[cols].round(3)
+    return pn.widgets.Tabulator(fp, height=320, sizing_mode="stretch_width", page_size=20, disabled=True)
+
+
+OUTLIER_FEATURE_SELECT = pn.widgets.Select(name="Feature", options=OUTLIER_FEATURES, value="V_drop_total_pct")
+OUTLIER_TAP_SELECT = pn.widgets.Select(name="CAN tap", options=["All taps"] + TAPPERS, value="All taps")
+OUTLIER_K_SLIDER = pn.widgets.FloatSlider(
+    name="Outlier sensitivity (IQR × k — lower = stricter)", start=1.5, end=5.0, step=0.5, value=3.0,
+)
+
+
+def _outlier_timeline_pane(feature_key, tap, k):
+    return pn.pane.Plotly(_build_outlier_timeline(feature_key, tap, k), config={"responsive": True}, sizing_mode="stretch_width")
+
+
+# ── Tab 7: Lab vs Field feature-family consistency check ────────────────────
+
+def _load_lab():
+    return pd.read_csv(LAB_CSV)
+
+
+LAB_FEATURES = _load_lab()
+LAB_FIELD_FAMILIES = build_matched_series(LAB_FEATURES, FEAT, FEAT_PK)
+LAB_FIELD_SUMMARY = summary_table(LAB_FIELD_FAMILIES)
+
+
+def _build_lab_field_intro():
+    md = """
+**Feature-family consistency check, not a value-for-value validation** — the lab battery
+(Ultracell UL18-12, 12 V) and the field battery (EnerSys ArmaSafe Plus 12FV120, 24 V 2S2P) are
+different products run through separate pipelines (BDPS pulse-test rig vs. vehicle CAN bus), and
+the field side has no shared ground-truth SOH to validate against. This checks whether the same
+feature families behave in a qualitatively similar way on both sides, per the paper's
+"Lab-to-Field Validation Procedure" — not that the two sides should land on the same numbers.
+`crank_duration_s`/`glow_lead_s` are field-only (the lab's crank pulses have a fixed, scripted
+duration) and are intentionally excluded.
+
+Each panel below is one condition (e.g. lab cold-crank, lab hot-crank, field), so lab and field are
+never pooled into a single misleading box. Axes are capped to a robust (outlier-resistant) range —
+a subtitle under each panel reports how many points were clipped from view and the most extreme
+value among them; the table at the bottom always reports true, uncapped min/mean/max.
+    """
+    return pn.pane.Markdown(md, sizing_mode="stretch_width", margin=(0, 20, 10, 20))
+
+
+def _build_lab_field_table():
+    rows = ""
+    for _, r in LAB_FIELD_SUMMARY.iterrows():
+        rows += f"| {r['feature_family']} | {r['series']} | {r['n']} | {r['min']:.2f} | {r['mean']:.2f} | {r['median']:.2f} | {r['max']:.2f} |\n"
+    md = f"""
+### Full (uncapped) summary statistics
+
+| Feature family | Series | n | Min | Mean | Median | Max |
+|---|---|---|---|---|---|---|
+{rows}
+    """
+    return pn.pane.Markdown(md, sizing_mode="stretch_width", margin=(10, 20, 20, 20))
+
+
 # ── Summary pane ──────────────────────────────────────────────────────────────
 
 def _build_summary():
@@ -284,17 +453,35 @@ directly comparable scale to `V_pre_1_10V`/`V_min_1_10V` in features_packs.csv.
 | Glow-plug lead time (s, +before start) | {f["glow_lead_s"].min():.2f} | {f["glow_lead_s"].mean():.2f} | {f["glow_lead_s"].max():.2f} |
 | Post-start (15-115s) voltage std. dev. (V) | {f["post_start_V_std_V"].min():.3f} | {f["post_start_V_std_V"].mean():.3f} | {f["post_start_V_std_V"].max():.3f} |
     """
-    return pn.pane.Markdown(md, width=1000, margin=(0, 20, 20, 20))
+    return pn.pane.Markdown(md, sizing_mode="stretch_width", margin=(0, 20, 20, 20))
 
 
 # ── Layout ────────────────────────────────────────────────────────────────────
 
 tabs = pn.Tabs(
-    ("Start Profile", pn.pane.Plotly(_build_start_fig(), config={"responsive": True})),
-    ("Feature Trends", pn.pane.Plotly(_build_trends_fig(), config={"responsive": True})),
-    ("Tap Comparison", pn.pane.Plotly(_build_tapper_fig(), config={"responsive": True})),
-    ("SoC & Temp Effects", pn.pane.Plotly(_build_soc_temp_fig(), config={"responsive": True})),
-    ("Post-Start Stability (new)", pn.pane.Plotly(_build_poststart_fig(), config={"responsive": True})),
+    ("Start Profile", pn.pane.Plotly(_build_start_fig(), config={"responsive": True}, sizing_mode="stretch_width")),
+    ("Feature Trends", pn.pane.Plotly(_build_trends_fig(), config={"responsive": True}, sizing_mode="stretch_width")),
+    ("Tap Comparison", pn.pane.Plotly(_build_tapper_fig(), config={"responsive": True}, sizing_mode="stretch_width")),
+    ("SoC & Temp Effects", pn.pane.Plotly(_build_soc_temp_fig(), config={"responsive": True}, sizing_mode="stretch_width")),
+    ("Post-Start Stability (new)", pn.pane.Plotly(_build_poststart_fig(), config={"responsive": True}, sizing_mode="stretch_width")),
+    ("Outlier Inspector (new)", pn.Column(
+        pn.pane.Markdown(KNOWN_INCIDENTS_MD, sizing_mode="stretch_width", margin=(0, 20, 10, 20)),
+        pn.Row(OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER, margin=(0, 20, 10, 20)),
+        pn.bind(_outlier_timeline_pane, OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER),
+        pn.pane.Markdown("#### Flagged starts — pack level", sizing_mode="stretch_width", margin=(10, 20, 0, 20)),
+        pn.bind(_build_outlier_table, OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER),
+        pn.pane.Markdown("#### Per-group breakdown for the same flagged starts", sizing_mode="stretch_width", margin=(10, 20, 0, 20)),
+        pn.bind(_build_outlier_group_table, OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER),
+        sizing_mode="stretch_width",
+    )),
+    ("Lab vs Field Comparison", pn.Column(
+        _build_lab_field_intro(),
+        *[pn.pane.Plotly(build_family_figure(fam), config={"responsive": True}, sizing_mode="stretch_width")
+          for fam in LAB_FIELD_FAMILIES],
+        _build_lab_field_table(),
+        sizing_mode="stretch_width",
+    )),
+    sizing_mode="stretch_width",
 )
 
 template = pn.template.FastListTemplate(
@@ -303,6 +490,7 @@ template = pn.template.FastListTemplate(
     accent_base_color="#2C4F8C",
     header_background="#2C4F8C",
     header_color="#FFFFFF",
+    main_max_width="100%",
 )
 
 template.servable()
