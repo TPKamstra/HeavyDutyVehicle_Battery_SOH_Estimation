@@ -47,6 +47,7 @@ entirely before grouping.
 
 Usage:
     python build_boxer_can_features.py --zips-dir /path/to/Accu_dataset_Boxer_anonimised
+    python build_boxer_can_features.py --zips-dir /path/to/... --extract-outlier-traces
 
 Writes into dataset_boxer_can/:
     <tapper>/features.csv, features_packs.csv, start_metadata.csv,
@@ -57,6 +58,27 @@ Writes into dataset_boxer_can/:
     boxer_can_features_packs.csv        (all tappers, all parts, per-group rows)
     example_start_trace.csv             (one full -60..+120s grid trace)
     example_start_events.csv            (its commando events)
+
+--extract-outlier-traces additionally writes:
+    outlier_raw_traces.csv / outlier_raw_events.csv -- the full -60..+120s
+    per-group voltage grid + commando events, but ONLY for the
+    OUTLIER_TRACE_TOP_N most extreme starts *per tracked feature*
+    (V_drop_total_pct, R_internal_est_ohm_pack, post_start_V_std_1_10V),
+    ranked by IQR-normalized distance from the median -- NOT "every start
+    beyond a fixed IQR fence". That fence-based approach was tried first and
+    produced a 1 GB file: post_start_V_std_1_10V alone flagged 653 of 4785
+    starts (13.6%) at the dashboard's loosest fence (k=1.5), because a
+    *global* fence pooled across 15 different vehicles mostly just detects
+    normal vehicle-to-vehicle differences in baseline accessory-load
+    behaviour, not real anomalies -- the tail is fat by nature, not by
+    fault. Ranking and capping at a fixed N bounds the output regardless of
+    how fat any one feature's tail is. Consequence: this covers the most
+    extreme rows only, not literally every row the dashboard's live
+    sensitivity slider can flag -- boxer_can_dashboard.py degrades
+    gracefully ("not available") for a selected start that isn't covered.
+    Re-run after any re-export to pick up new extremes. This is a deliberate
+    second pass over the zips (grid CSVs can't be randomly row-accessed, so
+    each part's full grid is read once and filtered down).
 """
 import argparse
 import glob
@@ -82,6 +104,17 @@ SMALL_FILES = [
     "features.csv", "features_packs.csv", "start_metadata.csv",
     "engine_events.csv", "metadata.json", "README.txt",
 ]
+
+# Same three features as boxer_can_dashboard.py's Outlier Inspector tab
+# (OUTLIER_FEATURES). Deliberately NOT a fixed IQR fence -- see module
+# docstring for why that produced a 1 GB file (post_start_V_std_1_10V's
+# fat tail is real vehicle-to-vehicle variation, not a bounded set of
+# anomalies). Instead this ranks by IQR-normalized distance from the median
+# and takes the top N per feature, which is bounded no matter how fat the
+# tail is. Ranking is scale-invariant, so it runs directly on the raw
+# (pre-mΩ/pre-volt-scaled) columns.
+OUTLIER_RAW_COLS = ["V_drop_total_pct", "R_internal_est_ohm_pack", "post_start_V_std_1_10V"]
+OUTLIER_TRACE_TOP_N = 60
 
 
 def _tapper_id_from_zipname(fn: str) -> str:
@@ -113,6 +146,31 @@ def _dedupe_zips(zip_paths: list) -> list:
         seen[h] = zp
         keep.append(zp)
     return keep
+
+
+def _outlier_keys(combined: pd.DataFrame, top_n: int = OUTLIER_TRACE_TOP_N) -> set:
+    """(can_tapper_id, GLOBAL start_index) pairs for the top_n most extreme
+    starts on EACH tracked feature (union across features, deduped) -- bounded
+    at 3 * top_n keys regardless of any feature's tail shape. 'Extreme' =
+    |value - median| / IQR; a fixed IQR fence isn't used here on purpose (see
+    module docstring)."""
+    keys = set()
+    for col in OUTLIER_RAW_COLS:
+        if col not in combined.columns:
+            continue
+        valid = combined[col].dropna()
+        if len(valid) < 5:
+            continue
+        median = valid.median()
+        q1, q3 = valid.quantile([0.25, 0.75])
+        iqr = q3 - q1
+        if iqr == 0:
+            continue
+        severity = (valid - median).abs() / iqr
+        top = severity.nlargest(top_n)
+        flagged = combined.loc[top.index, ["can_tapper_id", "start_index"]]
+        keys.update(map(tuple, flagged.itertuples(index=False, name=None)))
+    return keys
 
 
 def _process_part(z: zipfile.ZipFile):
@@ -153,6 +211,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--zips-dir", required=True, help="Directory containing motor_starts_can_tapper*.zip")
     ap.add_argument("--example-tapper", default="can_tapper11")
+    ap.add_argument("--extract-outlier-traces", action="store_true",
+                     help="Also write outlier_raw_traces.csv/outlier_raw_events.csv (see module docstring)")
     args = ap.parse_args()
 
     zip_paths = sorted(glob.glob(os.path.join(args.zips_dir, "motor_starts_*.zip")))
@@ -167,6 +227,7 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     all_feat, all_feat_pk = [], []
     example_trace = example_events = None
+    part_manifest = []  # (tapper, zip_path, offset) -- reused for --extract-outlier-traces' 2nd pass
 
     for tapper, parts in sorted(by_tapper.items()):
         parts = sorted(parts)  # timestamp suffix sorts chronologically
@@ -178,6 +239,7 @@ def main():
         index_offset = 0
 
         for part_i, zp in enumerate(parts):
+            part_manifest.append((tapper, zp, index_offset))
             dest_dir = os.path.join(tdir, f"part{part_i}") if multi_part else tdir
             os.makedirs(dest_dir, exist_ok=True)
 
@@ -225,6 +287,47 @@ def main():
     example_events.to_csv(os.path.join(OUT_DIR, "example_start_events.csv"), index=False)
 
     print(f"\nWrote {len(combined)} starts across {combined['can_tapper_id'].nunique()} tappers to {OUT_DIR}")
+
+    if args.extract_outlier_traces:
+        outlier_keys = _outlier_keys(combined)
+        print(f"\n{len(outlier_keys)} (tapper, start_index) pairs in the top {OUTLIER_TRACE_TOP_N} most extreme "
+              f"per feature -- extracting raw traces...")
+        trace_cols = ["start_index", "t_rel"] + list({
+            "FM-Center Voltage PG1_est in 1/10V", "FM-Center Voltage PG2 in 1/10V",
+            "FM-Center Voltage PG3_est in 1/10V", "FM-Center Voltage PG4 in 1/10V",
+        })
+        trace_parts, event_parts = [], []
+        for tapper, zp, offset in part_manifest:
+            local_targets = {gi - offset for (t, gi) in outlier_keys if t == tapper}
+            if not local_targets:
+                continue
+            with zipfile.ZipFile(zp) as z:
+                with z.open("voltage_series_grid.csv") as f:
+                    grid = pd.read_csv(f, usecols=lambda c: c in trace_cols)
+                sub = grid[grid["start_index"].isin(local_targets)].copy()
+                if not sub.empty:
+                    sub["start_index"] = sub["start_index"] + offset
+                    sub["can_tapper_id"] = tapper
+                    trace_parts.append(sub)
+                del grid
+
+                with z.open("engine_events.csv") as f2:
+                    events = pd.read_csv(f2, parse_dates=["start_time", "event_time"])
+                esub = events[events["start_index"].isin(local_targets)].copy()
+                if not esub.empty:
+                    esub["start_index"] = esub["start_index"] + offset
+                    esub["can_tapper_id"] = tapper
+                    event_parts.append(esub)
+
+        if trace_parts:
+            all_traces = pd.concat(trace_parts, ignore_index=True)
+            all_traces.to_csv(os.path.join(OUT_DIR, "outlier_raw_traces.csv"), index=False)
+            all_events = pd.concat(event_parts, ignore_index=True) if event_parts else pd.DataFrame()
+            all_events.to_csv(os.path.join(OUT_DIR, "outlier_raw_events.csv"), index=False)
+            print(f"Wrote raw traces for {all_traces[['can_tapper_id', 'start_index']].drop_duplicates().shape[0]} "
+                  f"flagged starts -> outlier_raw_traces.csv / outlier_raw_events.csv")
+        else:
+            print("No flagged starts found -- outlier_raw_traces.csv not written.")
 
 
 if __name__ == "__main__":

@@ -30,6 +30,12 @@ DATASHEET_IR_MOHM = 1.6  # mΩ AC internal resistance per battery (new, datashee
 # tappers present in the data is known (see _load() / TAPPERS).
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset_boxer_can")
+NOTES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_notes")
+
+
+def _read_note(name: str) -> str:
+    with open(os.path.join(NOTES_DIR, name), encoding="utf-8") as f:
+        return f.read()
 
 
 # ── Data loading ──────────────────────────────────────────────────────────────
@@ -64,6 +70,17 @@ _PALETTE = (
     "#E377C2",
 )
 TAPPER_COLOURS = {tap: _PALETTE[i % len(_PALETTE)] for i, tap in enumerate(TAPPERS)}
+
+# Raw per-group voltage traces for flagged-outlier starts only (see
+# build_boxer_can_features.py's --extract-outlier-traces) -- None if that's
+# never been run; the Outlier Inspector tab degrades gracefully in that case.
+_OUTLIER_TRACES_PATH = os.path.join(BASE, "outlier_raw_traces.csv")
+_OUTLIER_EVENTS_PATH = os.path.join(BASE, "outlier_raw_events.csv")
+OUTLIER_RAW_TRACES = pd.read_csv(_OUTLIER_TRACES_PATH) if os.path.exists(_OUTLIER_TRACES_PATH) else None
+OUTLIER_RAW_EVENTS = (
+    pd.read_csv(_OUTLIER_EVENTS_PATH, parse_dates=["start_time", "event_time"])
+    if os.path.exists(_OUTLIER_EVENTS_PATH) else None
+)
 
 
 # ── Tab 1: Representative start, with CAN "commando" event markers ──────────
@@ -258,33 +275,10 @@ OUTLIER_FEATURES = {
     "Post-start voltage std. dev. (V)": "post_start_V_std_V",
 }
 
-KNOWN_INCIDENTS_MD = """
-### Known data-quality incidents (found while reviewing this tab)
-
-**`can_tapper31` — current-sensing dropout, 2026-06-11 19:38 to 2026-06-12 21:52
-(start_index 388-404, 17 starts, ~26h window).** `I_load_A` collapses to single digits (-7 to 9 A)
-instead of the normal ~400 A crank current seen immediately before (start 387: 500 A) and after
-(start 405: 444 A) this window. `R_int_mohm` is computed as `ΔV / I_load`, so this tiny denominator
-produces meaningless values (up to 3200 mΩ) — **all 11 of the whole dataset's `R_int_mohm > 50 mΩ`
-outliers are from this one window on this one tap.** Voltage sample counts in the same window look
-normal (2158-2160 samples/start, matching elsewhere), so this looks like a temporary fault specific
-to the current channel rather than a general logging dropout. Root cause not confirmed from the
-analysis side.
-
-**`can_tapper33` — severe voltage-drop cluster, 2025-12-16 11:13-11:58
-(start_index 20-23, 4 starts, ~45 min window).** Pack-level voltage drop 44.6-54.9% (vs. a
-dataset-wide median of ~9%), during cold ambient temperature (4.3-6.5°C) with a *normal* crank
-current (380-500 A) — unlike the tapper31 incident, this looks like a real electrical event (all
-four pack groups sag together, not just one channel), consistent with a cold, weak battery under
-load rather than a sensor artifact. One point within it (start_index 21, group `PG1_est`) sags far
-more than its own siblings in the same start (83% vs. 44-46% for PG2/PG3_est/PG4) — `PG1_est` has
-no direct sensor (estimated from the pack-level signal, see the per-group note on the Feature Trends
-tab), so that specific extreme point should be treated with more suspicion than the other three.
-
-The controls below re-derive outlier flags live from the current data (not a hardcoded list of the
-starts above) — use them to check whether these incidents are still present after a re-export, or to
-look for new ones.
-"""
+# Long-form prose notes live in dashboard_notes/*.md, not as inline string
+# literals here -- keeps this file to code, and lets the notes be read/edited
+# without touching Python.
+KNOWN_INCIDENTS_MD = _read_note("outlier_known_incidents.md")
 
 
 def _flag_outliers(s: pd.Series, k: float = 3.0) -> pd.Series:
@@ -331,21 +325,105 @@ def _build_outlier_timeline(feature_key: str, tap: str, k: float) -> go.Figure:
     return fig
 
 
-def _build_outlier_table(feature_key: str, tap: str, k: float) -> pn.widgets.Tabulator:
+def label_for_col(feature_key: str) -> str:
+    return next(lbl for lbl, key in OUTLIER_FEATURES.items() if key == feature_key)
+
+
+# A single persistent, selectable Tabulator -- rebuilt-in-place (via
+# .value =) rather than recreated by pn.bind, so its .selection survives
+# across re-renders and can itself be bound to drive the raw-trace panel
+# below. Selection resets to empty whenever the filtered set changes.
+OUTLIER_TABLE = pn.widgets.Tabulator(
+    pd.DataFrame(), height=320, sizing_mode="stretch_width", page_size=15,
+    disabled=True, selectable=1,
+)
+
+
+def _refresh_outlier_table(feature_key: str, tap: str, k: float) -> None:
     f, mask = _outlier_frame(feature_key, tap, k)
     flagged = f[mask].sort_values("start_time").copy()
     cols = ["start_index", "start_time", "can_tapper_id", feature_key, "I_load_A", "delta_I_A",
             "V_pre_group_avg_V", "post_start_V_mean_V", "temp_avg_start_C", "soc_pct_est_pack"]
     cols = [c for c in cols if c in flagged.columns]
-    flagged = flagged[cols].round(3)
-    return pn.widgets.Tabulator(
-        flagged, height=320, sizing_mode="stretch_width", page_size=15, disabled=True,
-        titles={"start_index": "Start #", "can_tapper_id": "Tap", feature_key: label_for_col(feature_key)},
+    flagged = flagged[cols].round(3).reset_index(drop=True)
+    OUTLIER_TABLE.titles = {"start_index": "Start #", "can_tapper_id": "Tap", feature_key: label_for_col(feature_key)}
+    OUTLIER_TABLE.value = flagged
+    OUTLIER_TABLE.selection = []
+
+
+# ── Raw trace for the selected outlier row ──────────────────────────────────
+
+RAW_TRACE_GROUP_COLS = {
+    "PG1_est": "FM-Center Voltage PG1_est in 1/10V",
+    "PG2": "FM-Center Voltage PG2 in 1/10V",
+    "PG3_est": "FM-Center Voltage PG3_est in 1/10V",
+    "PG4": "FM-Center Voltage PG4 in 1/10V",
+}
+RAW_TRACE_GROUP_COLOURS = {"PG1_est": "#636EFA", "PG2": "#EF553B", "PG3_est": "#00CC96", "PG4": "#AB63FA"}
+RAW_TRACE_EVENT_COLOURS = {
+    "Engine starting command": "#d62728",
+    "Glow plugs preheating": "#ff7f0e",
+    "Engine running command": "#2ca02c",
+}
+
+
+def _build_raw_trace_fig(trace: pd.DataFrame, events: pd.DataFrame, tapper: str, start_idx: int) -> go.Figure:
+    trace = trace.sort_values("t_rel")
+    fig = go.Figure()
+    for g, col in RAW_TRACE_GROUP_COLS.items():
+        if col in trace.columns:
+            fig.add_trace(go.Scatter(
+                x=trace["t_rel"], y=trace[col] / 10, mode="lines", name=g,
+                line=dict(color=RAW_TRACE_GROUP_COLOURS[g], width=1.5),
+            ))
+    for _, row in events.iterrows():
+        fig.add_vline(
+            x=row["t_rel"],
+            line=dict(color=RAW_TRACE_EVENT_COLOURS.get(row["event_label"], "grey"), dash="dash", width=1.5),
+            annotation_text=row["event_label"], annotation_position="top",
+        )
+    fig.update_xaxes(title_text="Time relative to start command (s)")
+    fig.update_yaxes(title_text="Per-group voltage (V)")
+    fig.update_layout(
+        height=460, template="plotly_white",
+        title=f"Raw voltage trace — {tapper}, start_index {start_idx} (-60s .. +120s)",
+        legend=dict(orientation="h", y=-0.2, x=0),
+        margin=dict(t=60, b=70),
     )
+    return fig
 
 
-def label_for_col(feature_key: str) -> str:
-    return next(lbl for lbl, key in OUTLIER_FEATURES.items() if key == feature_key)
+def _build_selected_raw_trace(selection: list, table_value: pd.DataFrame):
+    if OUTLIER_RAW_TRACES is None:
+        return pn.pane.Markdown(
+            "*Raw traces haven't been extracted yet. Run `python build_boxer_can_features.py "
+            "--zips-dir <path> --extract-outlier-traces` once to enable this panel.*",
+            sizing_mode="stretch_width", margin=(10, 20, 20, 20),
+        )
+    if not selection or table_value is None or table_value.empty:
+        return pn.pane.Markdown(
+            "*Select a row in the table above to see its raw per-group voltage trace.*",
+            sizing_mode="stretch_width", margin=(10, 20, 20, 20),
+        )
+    row = table_value.iloc[selection[0]]
+    tapper, start_idx = row["can_tapper_id"], int(row["start_index"])
+
+    trace = OUTLIER_RAW_TRACES[
+        (OUTLIER_RAW_TRACES["can_tapper_id"] == tapper) & (OUTLIER_RAW_TRACES["start_index"] == start_idx)
+    ]
+    if trace.empty:
+        return pn.pane.Markdown(
+            f"*Raw trace not available for start {start_idx} ({tapper}) — it wasn't flagged when traces "
+            "were last extracted. Re-run `--extract-outlier-traces` after a re-export to refresh.*",
+            sizing_mode="stretch_width", margin=(10, 20, 20, 20),
+        )
+    events = pd.DataFrame()
+    if OUTLIER_RAW_EVENTS is not None:
+        events = OUTLIER_RAW_EVENTS[
+            (OUTLIER_RAW_EVENTS["can_tapper_id"] == tapper) & (OUTLIER_RAW_EVENTS["start_index"] == start_idx)
+        ]
+    fig = _build_raw_trace_fig(trace, events, tapper, start_idx)
+    return pn.pane.Plotly(fig, config={"responsive": True}, sizing_mode="stretch_width")
 
 
 def _build_outlier_group_table(feature_key: str, tap: str, k: float) -> pn.widgets.Tabulator:
@@ -366,6 +444,13 @@ OUTLIER_K_SLIDER = pn.widgets.FloatSlider(
     name="Outlier sensitivity (IQR × k — lower = stricter)", start=1.5, end=5.0, step=0.5, value=3.0,
 )
 
+# Side-effect binding (watch=True): keeps OUTLIER_TABLE.value in sync with the
+# filter widgets without recreating the widget, so its .selection can drive
+# the raw-trace panel below. Call once up front to populate it before the
+# layout is ever rendered.
+pn.bind(_refresh_outlier_table, OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER, watch=True)
+_refresh_outlier_table(OUTLIER_FEATURE_SELECT.value, OUTLIER_TAP_SELECT.value, OUTLIER_K_SLIDER.value)
+
 
 def _outlier_timeline_pane(feature_key, tap, k):
     return pn.pane.Plotly(_build_outlier_timeline(feature_key, tap, k), config={"responsive": True}, sizing_mode="stretch_width")
@@ -383,21 +468,7 @@ LAB_FIELD_SUMMARY = summary_table(LAB_FIELD_FAMILIES)
 
 
 def _build_lab_field_intro():
-    md = """
-**Feature-family consistency check, not a value-for-value validation** — the lab battery
-(Ultracell UL18-12, 12 V) and the field battery (EnerSys ArmaSafe Plus 12FV120, 24 V 2S2P) are
-different products run through separate pipelines (BDPS pulse-test rig vs. vehicle CAN bus), and
-the field side has no shared ground-truth SOH to validate against. This checks whether the same
-feature families behave in a qualitatively similar way on both sides, per the paper's
-"Lab-to-Field Validation Procedure" — not that the two sides should land on the same numbers.
-`crank_duration_s`/`glow_lead_s` are field-only (the lab's crank pulses have a fixed, scripted
-duration) and are intentionally excluded.
-
-Each panel below is one condition (e.g. lab cold-crank, lab hot-crank, field), so lab and field are
-never pooled into a single misleading box. Axes are capped to a robust (outlier-resistant) range —
-a subtitle under each panel reports how many points were clipped from view and the most extreme
-value among them; the table at the bottom always reports true, uncapped min/mean/max.
-    """
+    md = _read_note("lab_field_comparison_intro.md")
     return pn.pane.Markdown(md, sizing_mode="stretch_width", margin=(0, 20, 10, 20))
 
 
@@ -426,27 +497,17 @@ def _build_summary():
         sub = f[f["can_tapper_id"] == tap]
         tap_rows += f"| {tap} | {len(sub)} | {sub['start_time'].dt.date.min()} | {sub['start_time'].dt.date.max()} |\n"
 
+    dataset_notes = _read_note("dataset_summary_notes.md").format(
+        n_more_taps=len(TAPPERS) - 1, n_more_starts=n_events - 41,
+    )
+
     md = f"""
 ## Boxer Motor-Start CAN Export — {len(TAPPERS)} Taps, {n_events} Starts
 
 **Window per start:** 60s before .. 120s after (`tb60_ta120`) | **Commando markers:** Engine starting command, Glow plugs preheating, Engine running command
 **Date range (all taps):** {t_min} -- {t_max}
 
-Same pack as the original 41-start dataset used in the paper's Results section 5.2
-(can_tapper11 IS that dataset — identical start-for-start). This export adds {len(TAPPERS) - 1}
-more taps ({n_events - 41} more starts) plus CAN commando event timing and a new post-start
-voltage-stability feature (`post_start_V_std`), which is the field-side analogue of
-`driving_aux_load_V_std` — the strongest SoC-robust indicator found in the lab campaign
-(Section 5.1 of the paper). The original 41-start dataset could not test this, since it only
-ever captured crank-window features. Some taps (currently can_tapper14/15) arrived split across
-multiple zip exports covering different date ranges (a single export got too large); these are
-merged per-tap by build_boxer_can_features.py before this dashboard ever sees them.
-
-**Note on units:** `V_pre_total_1_10V` in features.csv is the *sum* of all four battery-group
-voltages (~2x a single 12V-class group), not the vehicle's real CAN "Total Voltage" signal.
-The new post-start feature instead uses the grid's per-group-average voltage, so it's on a
-directly comparable scale to `V_pre_1_10V`/`V_min_1_10V` in features_packs.csv.
-
+{dataset_notes}
 ### Per-tap breakdown
 
 | Tap | Starts | First start | Last start |
@@ -478,8 +539,11 @@ tabs = pn.Tabs(
         pn.pane.Markdown(KNOWN_INCIDENTS_MD, sizing_mode="stretch_width", margin=(0, 20, 10, 20)),
         pn.Row(OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER, margin=(0, 20, 10, 20)),
         pn.bind(_outlier_timeline_pane, OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER),
-        pn.pane.Markdown("#### Flagged starts — pack level", sizing_mode="stretch_width", margin=(10, 20, 0, 20)),
-        pn.bind(_build_outlier_table, OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER),
+        pn.pane.Markdown("#### Flagged starts — pack level (click a row to see its raw trace below)",
+                          sizing_mode="stretch_width", margin=(10, 20, 0, 20)),
+        OUTLIER_TABLE,
+        pn.pane.Markdown("#### Raw voltage trace for the selected start", sizing_mode="stretch_width", margin=(10, 20, 0, 20)),
+        pn.bind(_build_selected_raw_trace, OUTLIER_TABLE.param.selection, OUTLIER_TABLE.param.value),
         pn.pane.Markdown("#### Per-group breakdown for the same flagged starts", sizing_mode="stretch_width", margin=(10, 20, 0, 20)),
         pn.bind(_build_outlier_group_table, OUTLIER_FEATURE_SELECT, OUTLIER_TAP_SELECT, OUTLIER_K_SLIDER),
         sizing_mode="stretch_width",

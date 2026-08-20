@@ -442,3 +442,158 @@ TESTDAY_CUTOFF = "2026-01-27"   # display cutoff for trend/compare tabs
 SOH_MIN_BYTES  = 20_000         # minimum file size for a valid discharge_c5
 SOH_MIN_AH     = 5.0            # minimum discharge capacity to count as SOH measurement
 ```
+
+---
+
+# Boxer Battery — Motor-Start CAN Export Dashboard
+
+Field-side counterpart to the BatPi lab dashboards above: real engine-start
+events tapped off the CAN bus of Boxer armoured vehicles (EnerSys ArmaSafe
+Plus 12FV120, 24V 2S2P pack), used to check whether lab-derived SOH features
+transfer to the field (main.tex's "Lab-to-Field Validation Procedure").
+
+See `HANDOFF_boxer_can_dashboard.md` for the narrative/results summary of
+the 2026-08-06 session that built this section (what was tried, what was
+rejected and why, concrete numbers) — this section itself is the living
+technical reference (file roles, constants, how to re-run things).
+
+Run the dashboard:
+```
+panel serve boxer_can_dashboard.py --show
+```
+**Not `boxer_battery_dashboard.py`** — that's a separate, older, much
+smaller dashboard covering only the original 41-start EnerSys dataset in
+`dataset_boxer/start_data_battery/my_start_csv/`, and predates everything
+below. `boxer_can_dashboard.py` is the current one: 15 taps, 4799 starts,
+7 tabs including Outlier Inspector and Lab vs Field Comparison.
+
+## Data pipeline
+
+Raw export lives OUTSIDE this repo (multi-hundred-MB per tap, never
+git-tracked), currently at:
+```
+C:\Users\TPKam\OneDrive - University of Twente\Accu_dataset_Boxer_anonimised\
+    motor_starts_can_tapperNN_tb60_ta120_<timestamp>.zip
+```
+`build_boxer_can_features.py --zips-dir <that path>` reads each zip, derives
+`crank_duration_s`/`glow_lead_s` (from CAN commando event timing) and the new
+`post_start_V_std_1_10V` field feature (field analogue of the lab's
+`driving_aux_load_V_std` — the strongest SoC-robust indicator from the lab
+campaign), and writes only the small per-start tables into
+`dataset_boxer_can/<tapper>/` (git-tracked). `can_tapper11` IS the original
+41-start dataset, start-for-start identical.
+
+Multi-part tappers (currently `can_tapper14`, `can_tapper15`): a single
+export got too large and was split into two zips with non-overlapping date
+ranges; the script merges them per-tapper with an incrementing start_index
+offset applied *after* each part's own internal joins. Byte-identical
+duplicate zips (e.g. a browser "file (1).zip" re-download, seen on
+`can_tapper17`) are detected by content hash and skipped.
+
+Re-run after any new zip upload:
+```
+python build_boxer_can_features.py --zips-dir "C:\Users\TPKam\OneDrive - University of Twente\Accu_dataset_Boxer_anonimised"
+```
+
+## `lab_field_feature_comparison.py` — Lab vs Field Comparison tab
+
+Matches three feature families with a genuine counterpart on both the lab
+(`ul18_12_unit2`, `exports/ul18_12_unit2_summary_export/testday_features.csv`)
+and field (Boxer CAN) sides: crank apparent internal resistance, post-crank
+recovery voltage, post-crank voltage stability. Framed explicitly as a
+*feature-family consistency check*, not a value-for-value validation —
+different battery products, separate pipelines, no shared ground-truth SOH
+on the field side.
+
+Each family gets its own figure with one box+strip panel *per condition*
+(lab cold-crank / lab hot-crank / field, etc.) rather than pooling lab
+cold+hot into one box — pooling previously hid a ~100x scale mismatch
+between them (see caveat below). Panel axes are capped to a robust (Tukey
+k=3 IQR) range so a few extreme points can't compress the rest of the
+distribution into an unreadable sliver; each panel's subtitle reports how
+many points were clipped and the most extreme value, and the tab's bottom
+table always shows true, uncapped stats.
+
+**Known caveat — lab crank current is not realistic.** The lab's logged
+crank current (`crank_cold/hot_I_peak_A`, median 3.5-7.1 A) is ~2 orders of
+magnitude below a real engine-crank current (field `I_load_A`, median
+~430 A) — documented in `testday_v2_features.py` as "likely a low-current
+bench/validation run". Since `R_int_apparent = ΔV / I_peak`, this makes the
+lab-side crank-R_int numbers noise-dominated (cold mean ~1.7 mΩ, hot mean
+~214 mΩ — **not** a real cold/hot physical difference, just noise on a tiny
+denominator). That panel is a sanity check on the field pipeline's own
+internal consistency, not a lab-field agreement claim.
+
+## Outlier Inspector tab
+
+Interactive: pick a feature (voltage drop %, R_int mΩ, post-start V_std) and
+CAN tap, adjust an IQR-fence sensitivity slider (k, default 3.0 = Tukey "far
+out"), get a timeline scatter + two live-filtered tables (flagged starts at
+pack level, and the same starts' per-group breakdown), plus a raw-trace
+panel for whichever row is selected (see below).
+
+### Known data-quality incidents (found 2026-08-06)
+
+- **`can_tapper31` — current-sensing dropout, 2026-06-11 19:38 to
+  2026-06-12 21:52 (start_index 388-404, 17 starts, ~26h window).**
+  `I_load_A` collapses to single digits instead of the normal ~400 A seen
+  immediately before/after this window. `R_int_mohm = ΔV/I_load` blows up to
+  nonsense values (up to 3200 mΩ) — **all 11 of the dataset's
+  `R_int_mohm > 50 mΩ` outliers are from this one window on this one tap.**
+  Voltage sampling in the same window looks normal, so this is a
+  current-channel-specific fault, not a general logging dropout. Root cause
+  not confirmed from the analysis side.
+- **`can_tapper33` — severe voltage-drop cluster, 2025-12-16 11:13-11:58
+  (start_index 20-23, 4 starts, ~45 min).** Pack voltage drop 44.6-54.9%
+  (vs. ~9% dataset median), cold ambient (4.3-6.5°C), but *normal* crank
+  current (380-500 A) and all four pack groups sagging together — a real
+  electrical event (cold, weak battery under load), not a sensor artifact.
+  One point (start_index 21, group `PG1_est`) sags far more than its own
+  siblings (83% vs. 44-46%) — `PG1_est` has no direct sensor, so that one
+  point is more suspect than the rest.
+
+### Raw-trace drill-down (select a flagged row → see its actual voltage trace)
+
+Selecting a row in the flagged-starts table shows the raw -60s..+120s
+per-group voltage trace (+ CAN commando event markers) for that exact start,
+via `outlier_raw_traces.csv` / `outlier_raw_events.csv`.
+
+**These two files are NOT generated by the normal `build_boxer_can_features.py`
+run** — they need the extra `--extract-outlier-traces` flag, which does a
+second pass over the zips (grid CSVs can't be randomly row-accessed, so each
+part's full grid is read once and filtered):
+```
+python build_boxer_can_features.py --zips-dir "<path>" --extract-outlier-traces
+```
+
+⚠ **Design note — do NOT change this to "every start beyond a fixed IQR
+fence"**: that was tried first and produced a **1 GB file**.
+`post_start_V_std_1_10V` alone flagged 653 of 4785 starts (13.6%) at the
+dashboard's loosest fence (k=1.5), because a *global* fence pooled across 15
+different vehicles mostly detects normal vehicle-to-vehicle differences in
+baseline accessory-load behaviour, not real anomalies — the tail is fat by
+nature, not by fault. The fix: `_outlier_keys()` in
+`build_boxer_can_features.py` instead ranks every start by IQR-normalized
+distance from the median and takes the top `OUTLIER_TRACE_TOP_N` (currently
+60) *per tracked feature*, unioned and deduped — bounded to a predictable
+size (157 unique starts, ~82 MB at N=60) no matter how fat any one feature's
+tail is. Consequence: raw-trace coverage is "the most extreme N per
+feature", not "everything the live sensitivity slider can ever flag" —
+`boxer_can_dashboard.py` degrades gracefully ("not available") for a
+selected start outside that set, which is expected, not a bug (confirmed via
+`can_tapper15` start_index 7: a real 24.2% voltage drop, ranked #48, just
+outside the then-N=40 cutoff; bumping to N=60 covered it). Bump
+`OUTLIER_TRACE_TOP_N` if more coverage is wanted, re-run
+`--extract-outlier-traces` afterward, and sanity-check the resulting file
+size before treating it as done (rough size ≈ n_unique_starts × 9001 rows ×
+~45 bytes/row).
+
+## Key files
+
+| File | Role |
+|---|---|
+| `boxer_can_dashboard.py` | The dashboard — Start Profile, Feature Trends, Tap Comparison, SoC & Temp Effects, Post-Start Stability, Outlier Inspector, Lab vs Field Comparison |
+| `build_boxer_can_features.py` | Reads raw zips (`--zips-dir`), writes `dataset_boxer_can/`; `--extract-outlier-traces` additionally writes the raw-trace drill-down files |
+| `lab_field_feature_comparison.py` | Lab-vs-field feature-family comparison logic (shared by the dashboard tab and runnable standalone) |
+| `dataset_boxer_can/` | Git-tracked small per-start tables for all 15 taps + `outlier_raw_traces.csv`/`outlier_raw_events.csv` |
+| `dataset_boxer/start_data_battery/my_start_csv/` | The original 41-start-only dataset used by the separate, older `boxer_battery_dashboard.py` |
