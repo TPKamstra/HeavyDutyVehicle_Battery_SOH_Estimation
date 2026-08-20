@@ -19,7 +19,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from lab_field_feature_comparison import (
-    LAB_CSV, build_family_figure, build_matched_series, summary_table,
+    LAB_CSV, OLD_LAB_CSV, build_family_figure, build_matched_series, summary_table,
 )
 
 pn.extension("plotly", "tabulator")
@@ -459,11 +459,11 @@ def _outlier_timeline_pane(feature_key, tap, k):
 # ── Tab 7: Lab vs Field feature-family consistency check ────────────────────
 
 def _load_lab():
-    return pd.read_csv(LAB_CSV)
+    return pd.read_csv(OLD_LAB_CSV), pd.read_csv(LAB_CSV)
 
 
-LAB_FEATURES = _load_lab()
-LAB_FIELD_FAMILIES = build_matched_series(LAB_FEATURES, FEAT, FEAT_PK)
+LAB_OLD_FEATURES, LAB_FEATURES = _load_lab()
+LAB_FIELD_FAMILIES = build_matched_series(LAB_OLD_FEATURES, LAB_FEATURES, FEAT, FEAT_PK)
 LAB_FIELD_SUMMARY = summary_table(LAB_FIELD_FAMILIES)
 
 
@@ -570,4 +570,4 @@ template = pn.template.FastListTemplate(
 template.servable()
 
 if __name__ == "__main__":
-    pn.serve(template, show=True, port=5008)
+    pn.serve(template, show=True, port=5009)

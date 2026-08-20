@@ -2,6 +2,26 @@
 """
 Boxer Battery — Engine Start Analysis Dashboard
 EnerSys ArmaSafe Plus 12FV120, pack config: 2S2P (24 V nominal, 252 Ah)
+
+DATA-SUPERSEDED, KEPT INTENTIONALLY (checked 2026-08-20): this dashboard's
+41-start dataset (dataset_boxer/start_data_battery/my_start_csv/) is
+start-for-start identical to can_tapper11 inside boxer_can_dashboard.py's
+much larger 15-tap/4799-start export (confirmed in
+build_boxer_can_features.py's docstring) -- that dashboard's "Tap
+Comparison" tab, filtered to can_tapper11, shows the same underlying data.
+
+This file is kept running (not retired) because main.tex's current Results
+section (Section 5.2, the Limitations list, and the Conclusion) is written
+specifically around THIS 41-start dataset's own numbers and a specific
+finding tied to it -- "41 real engine-start events... one of the two
+estimated groups are numerically identical, sample for sample, to... a
+directly-measured group" (the PG1_est/PG3_est-vs-PG2/PG4 finding, documented
+in exports/boxer_summary_export/NOTES.md) -- neither of which has been
+re-verified against or re-pointed at the larger CAN export. Retire this file
+(and repoint main.tex's citations at can_tapper11 within the larger export)
+only once that re-verification happens; until then, treat this as the
+paper's field-results source of truth and boxer_can_dashboard.py's 14 other
+taps as the not-yet-cited extension of it.
 """
 import os
 import numpy as np

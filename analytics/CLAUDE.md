@@ -25,6 +25,49 @@ panel serve battery_feature_dashboard_unit2.py --show
 since testing is ongoing (as of 2026-07-05: Block 1 only, 9/10 degradation
 cycles logged) — click it to pick up new blocks/cycles without restarting.
 
+## Running all four dashboards (+ the unified one) — ports
+
+There are four independently-runnable dashboards plus one composed app that
+puts all of them on a single URL. Every port below is a fixed,
+non-colliding assignment (verified 2026-08-20 by grepping every
+`pn.serve(...)`/`port=` call in `analytics/*.py`) — **don't reuse one of
+these ports for anything else in this folder**, and if you add a fifth
+dashboard, pick a free port outside this list.
+
+| Port | Dashboard | Data | Run from |
+|---|---|---|---|
+| 5006 | `battery_feature_dashboard.py` | lab, `old_ul18_12` | needs `LOGBATTEST_Complete/` — see below |
+| 5007 | `boxer_battery_dashboard.py` | field, old 41-start dataset | `analytics/` (git-tracked data) |
+| 5008 | `battery_feature_dashboard_unit2.py` | lab, `ul18_12_unit2` | needs `ul18_12_unit2/` log folder — see below |
+| 5009 | `boxer_can_dashboard.py` | field, 15 CAN taps / 4799 starts | `analytics/` (git-tracked data) |
+| 5010 | `main_dashboard.py` (unified, all four above composed into one app) | all of the above | needs the lab log folders too — see below |
+
+```
+panel serve battery_feature_dashboard.py --show          # port 5006
+panel serve boxer_battery_dashboard.py --show             # port 5007
+panel serve battery_feature_dashboard_unit2.py --show     # port 5008
+panel serve boxer_can_dashboard.py --show                 # port 5009
+panel serve main_dashboard.py --show                      # port 5010
+```
+
+**`main_dashboard.py` can only run somewhere both the lab raw logs AND the
+field git-tracked data are present together** — in this git checkout alone
+that's not true: `battery_feature_dashboard.py`/`_unit2.py` need
+`LOGBATTEST_Complete/`/`ul18_12_unit2/`, which are intentionally gitignored
+and only exist in the separate `C:\Users\TPKam\Documents\BatPi_Download\`
+working copy (see root `CLAUDE.md`'s note on this). As of 2026-08-20,
+`main_dashboard.py`, `boxer_can_dashboard.py`, `lab_field_feature_comparison.py`,
+`dashboard_notes/`, `dataset_boxer_can/`, and the two lab summary-export
+folders (`exports/old_ul18_12_summary_export/`, `exports/ul18_12_unit2_summary_export/`)
+were copied into `BatPi_Download/` specifically so `main_dashboard.py` could
+be verified end-to-end there — **that copy is not automatic or git-tracked**;
+if any of those files change in this repo, re-copy them into
+`BatPi_Download/` before relying on the unified dashboard there again.
+
+`main_dashboard.py` composes the other four's already-built Panel objects
+into one `pn.Tabs` (see its own module docstring for exactly how, and why
+`boxer_battery_dashboard.py` is deliberately NOT one of the sections).
+
 ---
 
 ## Hardware & battery
@@ -497,32 +540,70 @@ python build_boxer_can_features.py --zips-dir "C:\Users\TPKam\OneDrive - Univers
 
 ## `lab_field_feature_comparison.py` — Lab vs Field Comparison tab
 
-Matches three feature families with a genuine counterpart on both the lab
-(`ul18_12_unit2`, `exports/ul18_12_unit2_summary_export/testday_features.csv`)
-and field (Boxer CAN) sides: crank apparent internal resistance, post-crank
+Matches three feature families with a genuine counterpart on **both lab
+batteries** (`old_ul18_12`, `exports/old_ul18_12_summary_export/testday_v2_beta_partial.csv`,
+8 runs, partial v2-schema rollout; `ul18_12_unit2`,
+`exports/ul18_12_unit2_summary_export/testday_features.csv`, 140 runs) and
+the field (Boxer CAN) side: crank apparent internal resistance, post-crank
 recovery voltage, post-crank voltage stability. Framed explicitly as a
 *feature-family consistency check*, not a value-for-value validation —
 different battery products, separate pipelines, no shared ground-truth SOH
-on the field side.
+on the field side. `old_ul18_12`'s 8-run sample is a coarse spot-check, not
+statistically weighted equally against `unit2`'s 140 runs.
 
-Each family gets its own figure with one box+strip panel *per condition*
-(lab cold-crank / lab hot-crank / field, etc.) rather than pooling lab
-cold+hot into one box — pooling previously hid a ~100x scale mismatch
-between them (see caveat below). Panel axes are capped to a robust (Tukey
-k=3 IQR) range so a few extreme points can't compress the rest of the
-distribution into an unreadable sliver; each panel's subtitle reports how
-many points were clipped and the most extreme value, and the tab's bottom
-table always shows true, uncapped stats.
+Each family gets its own figure with one box+strip panel *per
+(battery, condition)* — lab old_ul18_12 cold-crank / old_ul18_12 hot-crank /
+unit2 cold-crank / unit2 hot-crank / field, etc. — never pooled. Color
+convention: blue = lab, orange = field (fixed); within lab, the light/dark
+blue shade normally distinguishes cold vs. hot condition, but for the
+single-condition V_std family (no cold/hot axis) it distinguishes battery
+identity instead (old_ul18_12 vs. unit2) — battery/condition identity is
+always in the panel's text label too, never carried by color alone. Panel
+axes are capped to a robust (Tukey k=3 IQR) range so a few extreme points
+can't compress the rest of the distribution into an unreadable sliver; each
+panel's subtitle reports how many points were clipped and the most extreme
+value, and the tab's bottom table always shows true, uncapped stats.
 
-**Known caveat — lab crank current is not realistic.** The lab's logged
-crank current (`crank_cold/hot_I_peak_A`, median 3.5-7.1 A) is ~2 orders of
-magnitude below a real engine-crank current (field `I_load_A`, median
-~430 A) — documented in `testday_v2_features.py` as "likely a low-current
-bench/validation run". Since `R_int_apparent = ΔV / I_peak`, this makes the
-lab-side crank-R_int numbers noise-dominated (cold mean ~1.7 mΩ, hot mean
-~214 mΩ — **not** a real cold/hot physical difference, just noise on a tiny
+**Known caveat — lab crank current is not realistic.** Both lab batteries'
+logged crank current (`crank_cold/hot_I_peak_A`, old_ul18_12 median
+~2.6-3.1 A, unit2 median 3.5-7.1 A) is ~2 orders of magnitude below a real
+engine-crank current (field `I_load_A`, median ~400 A) — documented in
+`testday_v2_features.py` as "likely a low-current bench/validation run".
+Since `R_int_apparent = ΔV / I_peak`, this makes lab-side crank-R_int
+noise-dominated on both batteries (unit2: cold mean ~1.7 mΩ, hot mean
+~214 mΩ; old_ul18_12: cold mean ~1.9 mΩ, hot mean ~685 mΩ — **not** a real
+cold/hot physical difference on either battery, just noise on a tiny
 denominator). That panel is a sanity check on the field pipeline's own
 internal consistency, not a lab-field agreement claim.
+
+**Known caveat — field R_int needed the same diagnostic, and wasn't clean
+(checked 2026-08-20).** `exports/RESULTS_SUMMARY_FOR_PAPER.md` §1 explicitly
+flagged this as not yet done: "`boxer` (field data) does *not* need this
+kind of filter" was true of the *old* 41-start dataset (no per-row current
+at all), but the newer CAN export (`boxer_can_features_enriched.csv`) does
+log `I_load_A`, and applying the same correlate-R_int-against-current check
+used on the lab data found two distinct problems, not one:
+1. A **sign-flip cluster on `can_tapper14`** (~30 starts, roughly
+   start_index 116-396): `I_load_A` is large-magnitude but *negative*
+   (~-400 to -500 A) for real crank events (10-17% voltage drop) — not a
+   low-current issue, and `R_int_mohm` is still wrong there (up to 5800 mΩ)
+   for a reason not fully diagnosed (the per-start R_int figure is computed
+   upstream, inside the original zip export, not by
+   `build_boxer_can_features.py`).
+2. **Scattered low-current starts across nearly every other tap**, not just
+   the already-documented `can_tapper31` dropout window: ~2% of all starts
+   have `|I_load_A| < 150 A` (well below the ~300-500 A bulk), with R_int
+   correspondingly inflated (mean ~380-500 mΩ in that bucket vs. ~9.6 mΩ
+   clean).
+
+`lab_field_feature_comparison.py`'s `_field_r_int_reliable_mask()` filters
+both patterns out (`|I_load_A| >= 150` AND `R_int_mohm <= 50`) before the
+field R_int series ever reaches this tab — excludes 231 of 4799 starts
+(~4.8%). This is a *diagnostic filter for the comparison tab*, not a fix to
+the underlying per-start feature computation — the raw, unfiltered columns
+in `boxer_can_features_enriched.csv` are untouched, and the Outlier
+Inspector tab (which flags on the raw `R_int_mohm` values) will still
+surface these same rows.
 
 ## Outlier Inspector tab
 
@@ -592,8 +673,9 @@ size before treating it as done (rough size ≈ n_unique_starts × 9001 rows ×
 
 | File | Role |
 |---|---|
+| `main_dashboard.py` | Unified dashboard — composes all four below into one app on one URL/port (5010); see its own module docstring for exactly what it reuses vs. builds fresh |
 | `boxer_can_dashboard.py` | The dashboard — Start Profile, Feature Trends, Tap Comparison, SoC & Temp Effects, Post-Start Stability, Outlier Inspector, Lab vs Field Comparison |
 | `build_boxer_can_features.py` | Reads raw zips (`--zips-dir`), writes `dataset_boxer_can/`; `--extract-outlier-traces` additionally writes the raw-trace drill-down files |
-| `lab_field_feature_comparison.py` | Lab-vs-field feature-family comparison logic (shared by the dashboard tab and runnable standalone) |
+| `lab_field_feature_comparison.py` | Lab-vs-field feature-family comparison logic for BOTH lab batteries (shared by `boxer_can_dashboard.py`'s tab, `main_dashboard.py`'s top-level section, and runnable standalone) |
 | `dataset_boxer_can/` | Git-tracked small per-start tables for all 15 taps + `outlier_raw_traces.csv`/`outlier_raw_events.csv` |
-| `dataset_boxer/start_data_battery/my_start_csv/` | The original 41-start-only dataset used by the separate, older `boxer_battery_dashboard.py` |
+| `dataset_boxer/start_data_battery/my_start_csv/` | The original 41-start-only dataset used by the separate, older `boxer_battery_dashboard.py` (kept intentionally — see that file's own docstring) |

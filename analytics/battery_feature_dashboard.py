@@ -2916,4 +2916,4 @@ dashboard = pn.Tabs(
 dashboard.servable()
 
 if __name__ == "__main__":
-    pn.serve(dashboard, title="Battery Feature Dashboard", show=True)
+    pn.serve(dashboard, title="Battery Feature Dashboard", show=True, port=5006)
