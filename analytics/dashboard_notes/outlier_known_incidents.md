@@ -20,6 +20,21 @@ more than its own siblings in the same start (83% vs. 44-46% for PG2/PG3_est/PG4
 no direct sensor (estimated from the pack-level signal, see the per-group note on the Feature Trends
 tab), so that specific extreme point should be treated with more suspicion than the other three.
 
+**`can_tapper14` — disproportionate low-current/R_int-invalid rate, unresolved (found 2026-08-20).**
+136 of 758 starts (17.9%) are flagged `invalid_R_int` (`I_load_A` below 200 A or missing) — every
+other tap sits between 0% and 12.5%, so this is its own issue, not just an instance of the general
+low-current pattern. Checked for a clean root cause the way the tapper31 dropout had one: **not
+found.** The flagged starts span ~2.5 years (2022-09-15 to 2024-10-11) across 40 different dates —
+not a single contiguous outage — though two short windows are notably denser than the rest
+(2023-04-18 to 2023-04-26: 4-8 flagged starts/day; 2023-07-17 to 2023-07-19: 10, 3, then 14 flagged
+starts). The `R_int_negative_current` sign-flip pattern (see `invalid_R_int`'s sub-flags in
+`boxer_can_features_enriched.csv`) is also concentrated on this tap (31 of 36 non-dropout-window
+negative-current starts) and shows the same shape: spread across 8 months (2022-11 to 2023-07) with
+a same single-day spike on 2023-07-19 (14 of 31). Whether this is one intermittent fault recurring
+over years, several unrelated faults, or something about how this particular tap/vehicle is wired or
+used differently from the other 14, is **not determined** — flagging as unresolved rather than
+guessing.
+
 The controls below re-derive outlier flags live from the current data (not a hardcoded list of the
 starts above) — use them to check whether these incidents are still present after a re-export, or to
 look for new ones.

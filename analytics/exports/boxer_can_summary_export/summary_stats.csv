@@ -1,0 +1,11 @@
+source,metric,min,mean,max,n
+"boxer_can_features_enriched (15 taps, all starts)",V_drop_total_pct,-0.2016,10.0546,70.0957,4799
+"boxer_can_features_enriched (15 taps, all starts)",soc_pct_est_pack,40.0,78.6347,100.0,4799
+"boxer_can_features_enriched (15 taps, all starts)",temp_avg_start_C,-5.65,15.6928,42.6667,4721
+"boxer_can_features_enriched (15 taps, all starts)",t_recovery_s_max,0.02,0.9845,8.26,4799
+"boxer_can_features_enriched (15 taps, all starts)",R_int_pack_mohm [unfiltered],0.1869,15.9474,5800.0,4633
+"boxer_can_features_enriched (15 taps, all starts) [filtered: invalid_R_int==False]",R_int_pack_mohm,0.1869,9.4431,58.5366,4478
+"boxer_can_features_enriched (15 taps, all starts)",R_int_min_voltage_method_mohm [unfiltered],3.7037,28.0624,8200.0,4664
+"boxer_can_features_enriched (15 taps, all starts) [filtered: invalid_R_int==False]",R_int_min_voltage_method_mohm,4.4164,13.3679,100.431,4493
+"boxer_can_features_enriched (15 taps, all starts)",R_int_from_ocv_mohm [unfiltered],0.2169,19.5024,6100.0,4429
+"boxer_can_features_enriched (15 taps, all starts) [filtered: invalid_R_int==False]",R_int_from_ocv_mohm,0.2169,10.6939,65.0,4261

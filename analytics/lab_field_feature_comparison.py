@@ -129,8 +129,16 @@ AXIS_PAD_FRAC = 0.08
 # catches the separate can_tapper14 sign-flip cluster, which has *large*
 # |I_load_A| (~400-500 A, just negative) but still-wrong R_int for a reason
 # not fully diagnosed (see docstring) -- current-magnitude alone would miss it.
-R_INT_MIN_CURRENT_A = 150.0
-R_INT_MAX_PLAUSIBLE_MOHM = 50.0
+#
+# NOTE: this used to be an ad-hoc 150A/50mOhm filter computed independently
+# here. It's now read directly from `invalid_R_int` (and its two sub-flags),
+# which build_boxer_can_features.py bakes into boxer_can_features_enriched.csv
+# on every regeneration (Spearman r(I_load_A, R_int) = -0.52 to -0.59; a
+# 200A threshold is where all three R_int columns cross from a bounded,
+# physically plausible range into implausible territory -- see that script's
+# `add_r_int_validity_flags()` for the exact criteria). One canonical
+# definition, not two -- the field R_int marker style below reads these flags
+# rather than re-deriving them.
 
 
 # ── Data loading ──────────────────────────────────────────────────────────────
@@ -141,23 +149,6 @@ def load_data():
     field = pd.read_csv(FIELD_ENRICHED_CSV, parse_dates=["start_time"])
     field_pk = pd.read_csv(FIELD_PACKS_CSV, parse_dates=["start_time"])
     return lab_old, lab_unit2, field, field_pk
-
-
-def _field_r_int_reliable_mask(field: pd.DataFrame) -> pd.Series:
-    """
-    True where R_internal_est_ohm_pack is trustworthy enough to plot.
-    Excludes: |I_load_A| < R_INT_MIN_CURRENT_A (near-zero-current artifact,
-    e.g. the documented can_tapper31 dropout, plus scattered low-current
-    starts across nearly every other tap); R_int > R_INT_MAX_PLAUSIBLE_MOHM
-    regardless of current (catches the can_tapper14 sign-flip cluster, whose
-    |I_load_A| is large but R_int is still wrong); and rows missing either
-    value entirely. ~231 of 4799 starts (~4.8%) are excluded as of this
-    dataset -- see module docstring for the investigation.
-    """
-    r_mohm = field["R_internal_est_ohm_pack"] * 1000
-    i_abs = field["I_load_A"].abs()
-    reliable = (i_abs >= R_INT_MIN_CURRENT_A) & (r_mohm <= R_INT_MAX_PLAUSIBLE_MOHM)
-    return reliable.fillna(False)
 
 
 # ── Robust axis range (outlier-aware, never data-dropping) ─────────────────
@@ -213,8 +204,13 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
     """
     families = []
 
-    field_r_int_ok = _field_r_int_reliable_mask(field)
-    field_r_int = (field.loc[field_r_int_ok, "R_internal_est_ohm_pack"] * 1000)
+    # Field R_int: shown for EVERY start (not excluded), with invalid_R_int
+    # points marked distinctly (see build_family_figure) rather than dropped
+    # -- same flag-don't-filter convention as the rest of this project.
+    # Falls back to "nothing flagged" if an older enriched CSV predates the
+    # flag columns (regenerate via build_boxer_can_features.py to get them).
+    field_r_int = field["R_internal_est_ohm_pack"] * 1000
+    field_r_int_flag = field["invalid_R_int"] if "invalid_R_int" in field.columns else pd.Series(False, index=field.index)
 
     # (a) Crank apparent internal resistance -- one panel per (battery,
     # condition) pair plus field, never pooled -- see module docstring caveat.
@@ -226,15 +222,20 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
         "caveat": (
             "Lab crank current is ~2 orders of magnitude below a realistic engine-crank current -- "
             "R_int_apparent is noise-dominated on the lab side (sanity-checks the field pipeline, not a "
-            "lab-field agreement claim). Field panel excludes ~4.8% of starts with unreliable current/R_int "
-            "(sign-flip and near-zero-current artifacts) -- see docstring."
+            "lab-field agreement claim). Field panel marks ~6.4% of starts flagged invalid_R_int "
+            "(sign-flip/dropout/low-current artifacts, grey ✕) -- box stats computed on the clean "
+            "subset only; see docstring."
         ),
         "series": [
             {"label": "Lab old_ul18_12 — cold", "values": lab_old["crank_cold_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_1},
             {"label": "Lab old_ul18_12 — hot", "values": lab_old["crank_hot_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_2},
             {"label": "Lab unit2 — cold", "values": lab_unit2["crank_cold_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_1},
             {"label": "Lab unit2 — hot", "values": lab_unit2["crank_hot_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_2},
-            {"label": "Field — per start (reliability-filtered)", "values": field_r_int.dropna(), "color": FIELD_BASE},
+            {
+                "label": "Field — per start", "color": FIELD_BASE,
+                "values": field_r_int.dropna(),
+                "flag": field_r_int_flag.reindex(field_r_int.dropna().index),
+            },
         ],
     })
 
@@ -290,10 +291,23 @@ def summary_table(families: list) -> pd.DataFrame:
 
 # ── Plots ────────────────────────────────────────────────────────────────────
 
+# Marker for physically-motivated "flagged, not statistically detected"
+# points (currently: field R_int's invalid_R_int) -- deliberately NOT the
+# same style as robust_axis_range's clipped-point handling (that's a view
+# limitation, reported in text, not a marker) and deliberately borrowed from
+# the lab dashboards' own faded/hollow "don't fully trust this point" visual
+# language (battery_feature_dashboard.py's IQR-outlier "x" markers,
+# lightgrey) rather than inventing a new convention.
+FLAGGED_MARKER = dict(symbol="x", color="lightgrey", size=7, opacity=0.9)
+
+
 def build_family_figure(fam: dict) -> go.Figure:
     """One figure per feature family: one box+strip panel per series (small
     multiples), each panel's axis independently outlier-capped (or sharing
-    one capped range across the row when `shared_axis` is True)."""
+    one capped range across the row when `shared_axis` is True). A series
+    may carry an optional "flag" (boolean Series aligned to "values") --
+    box statistics are computed on the unflagged subset only, and flagged
+    points are overlaid with FLAGGED_MARKER rather than excluded."""
     n = len(fam["series"])
 
     if fam["shared_axis"]:
@@ -306,6 +320,8 @@ def build_family_figure(fam: dict) -> go.Figure:
     panel_info = []
     for s in fam["series"]:
         v = s["values"]
+        flag = s.get("flag")
+        n_flagged = int(flag.sum()) if flag is not None else 0
         axis_range, n_clipped, extreme = shared_range, 0, None
         if not fam["shared_axis"]:
             axis_range, n_clipped, extreme = robust_axis_range(v)
@@ -317,6 +333,8 @@ def build_family_figure(fam: dict) -> go.Figure:
             below = v[v < lo]
             extreme = float(above.max()) if len(above) else (float(below.min()) if len(below) else None)
         note = f"n={v.count()}"
+        if n_flagged:
+            note += f", {n_flagged} flagged (✕)"
         if n_clipped:
             note += f", {n_clipped} clipped (max {extreme:.1f})"
         subplot_titles.append(f"{s['label']}<br><span style='font-size:11px;color:#898781'>{note}</span>")
@@ -325,13 +343,29 @@ def build_family_figure(fam: dict) -> go.Figure:
     fig = make_subplots(rows=1, cols=n, horizontal_spacing=0.06, subplot_titles=subplot_titles)
 
     for c, (s, axis_range) in enumerate(panel_info, start=1):
+        flag = s.get("flag")
+        clean_values = s["values"][~flag] if flag is not None else s["values"]
+        flagged_values = s["values"][flag] if flag is not None else s["values"].iloc[0:0]
+
         fig.add_trace(go.Box(
-            y=s["values"], name=s["label"],
+            y=clean_values, name=s["label"],
             marker=dict(color=s["color"], size=4, opacity=0.5),
             line=dict(color=s["color"]), fillcolor=s["color"], opacity=0.55,
             boxpoints="all", jitter=0.45, pointpos=0, width=0.55,
             showlegend=False,
         ), row=1, col=c)
+        if len(flagged_values):
+            # Same category (name) as the box above -- Plotly aligns it to the
+            # same x slot and applies its own jitter; box/line made invisible
+            # so only the flagged points themselves show, in FLAGGED_MARKER.
+            fig.add_trace(go.Box(
+                y=flagged_values, name=s["label"],
+                marker=FLAGGED_MARKER, boxpoints="all", jitter=0.45, pointpos=0, width=0.55,
+                line=dict(color="rgba(0,0,0,0)", width=0), fillcolor="rgba(0,0,0,0)",
+                hoveron="points",
+                hovertemplate="⚠ flagged invalid_R_int<br>%{y:.1f}<extra></extra>",
+                showlegend=False,
+            ), row=1, col=c)
         fig.update_yaxes(title_text=fam["ylabel"] if c == 1 else None, range=list(axis_range), row=1, col=c)
         fig.update_xaxes(showticklabels=False, row=1, col=c)
 

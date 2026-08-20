@@ -105,6 +105,62 @@ SMALL_FILES = [
     "engine_events.csv", "metadata.json", "README.txt",
 ]
 
+# Field R_int reliability diagnostic (added 2026-08-20, after applying the
+# same low-current/ΔV-I-noise-blowup diagnostic already run on the lab data
+# -- see exports/RESULTS_SUMMARY_FOR_PAPER.md §1 for that precedent and the
+# physical explanation: R_int = ΔV / I, so a small I turns ordinary voltage
+# noise into a wildly inflated "resistance"). Spearman r(I_load_A, R_int) is
+# -0.52 to -0.59 across all three R_internal_est_ohm* columns; below this
+# threshold they cross from a bounded, physically plausible range (median
+# 9-12 mOhm, max 58-100 mOhm) into implausible territory (max in the
+# thousands of mOhm). All three columns divide by the same I_load_A, so they
+# share ONE flag rather than three -- checked: the columns' own NaN patterns
+# differ slightly (the from_ocv method fails more often for unrelated
+# reasons), but whether I_load_A itself is trustworthy for a given row is
+# identical across all three, so a shared flag is correct, not a
+# simplification.
+R_INT_MIN_CURRENT_A = 200.0
+R_INT_COLS = [
+    "R_internal_est_ohm_pack",
+    "R_internal_est_ohm_min_voltage_method_pack",
+    "R_internal_est_ohm_from_ocv_pack",
+]
+# can_tapper31's documented ~26h current-sensing dropout (start_index
+# 388-404, 2026-06-11 19:38 to 2026-06-12 21:52) -- see
+# dashboard_notes/outlier_known_incidents.md. Flagged separately from the
+# general low-current pattern above because it has a known, specific root
+# cause (a temporary fault on that one tap's current channel), not because
+# the underlying invalidity criterion differs -- every row in this window is
+# already covered by invalid_R_int too.
+R_INT_DROPOUT_TAPPER = "can_tapper31"
+R_INT_DROPOUT_START_RANGE = (388, 404)
+
+
+def add_r_int_validity_flags(combined: pd.DataFrame) -> pd.DataFrame:
+    """
+    Additive only -- never drops or overwrites an existing column. Same
+    flag-don't-filter convention as the lab side's `{col}_invalid` /
+    `_low_current_flag` columns (export_ul18_12_unit2_summary.py,
+    export_old_ul18_12_summary.py), just named for what they are here since
+    one flag now covers three R_int columns at once (see comment above).
+
+    invalid_R_int: I_load_A < R_INT_MIN_CURRENT_A or missing -- the general
+        reliability flag; use this to filter any of the three R_int columns.
+    R_int_current_sensor_dropout: True for can_tapper31's documented dropout
+        window -- a subset of invalid_R_int with a known root cause.
+    R_int_negative_current: True where I_load_A < 0 -- a sign-convention
+        artifact (seen concentrated on can_tapper14), also a subset of
+        invalid_R_int, also flagged separately since it's a distinct pattern.
+    """
+    combined["invalid_R_int"] = (combined["I_load_A"] < R_INT_MIN_CURRENT_A) | combined["I_load_A"].isna()
+    combined["R_int_current_sensor_dropout"] = (
+        (combined["can_tapper_id"] == R_INT_DROPOUT_TAPPER)
+        & combined["start_index"].between(*R_INT_DROPOUT_START_RANGE)
+    )
+    combined["R_int_negative_current"] = combined["I_load_A"] < 0
+    return combined
+
+
 # Same three features as boxer_can_dashboard.py's Outlier Inspector tab
 # (OUTLIER_FEATURES). Deliberately NOT a fixed IQR fence -- see module
 # docstring for why that produced a 1 GB file (post_start_V_std_1_10V's
@@ -280,6 +336,7 @@ def main():
 
     combined = pd.concat(all_feat, ignore_index=True)
     combined_pk = pd.concat(all_feat_pk, ignore_index=True)
+    combined = add_r_int_validity_flags(combined)
 
     combined.to_csv(os.path.join(OUT_DIR, "boxer_can_features_enriched.csv"), index=False)
     combined_pk.to_csv(os.path.join(OUT_DIR, "boxer_can_features_packs.csv"), index=False)

@@ -577,33 +577,52 @@ denominator). That panel is a sanity check on the field pipeline's own
 internal consistency, not a lab-field agreement claim.
 
 **Known caveat — field R_int needed the same diagnostic, and wasn't clean
-(checked 2026-08-20).** `exports/RESULTS_SUMMARY_FOR_PAPER.md` §1 explicitly
-flagged this as not yet done: "`boxer` (field data) does *not* need this
-kind of filter" was true of the *old* 41-start dataset (no per-row current
-at all), but the newer CAN export (`boxer_can_features_enriched.csv`) does
-log `I_load_A`, and applying the same correlate-R_int-against-current check
-used on the lab data found two distinct problems, not one:
-1. A **sign-flip cluster on `can_tapper14`** (~30 starts, roughly
-   start_index 116-396): `I_load_A` is large-magnitude but *negative*
-   (~-400 to -500 A) for real crank events (10-17% voltage drop) — not a
-   low-current issue, and `R_int_mohm` is still wrong there (up to 5800 mΩ)
-   for a reason not fully diagnosed (the per-start R_int figure is computed
-   upstream, inside the original zip export, not by
-   `build_boxer_can_features.py`).
-2. **Scattered low-current starts across nearly every other tap**, not just
-   the already-documented `can_tapper31` dropout window: ~2% of all starts
-   have `|I_load_A| < 150 A` (well below the ~300-500 A bulk), with R_int
-   correspondingly inflated (mean ~380-500 mΩ in that bucket vs. ~9.6 mΩ
-   clean).
+(found 2026-08-20, baked into the pipeline as of the same date).**
+`exports/RESULTS_SUMMARY_FOR_PAPER.md` §1 explicitly flagged this as not yet
+done: "`boxer` (field data) does *not* need this kind of filter" was true of
+the *old* 41-start dataset (no per-row current at all), but the newer CAN
+export (`boxer_can_features_enriched.csv`) does log `I_load_A`, and applying
+the same correlate-R_int-against-current check used on the lab data
+(Spearman r = -0.52 to -0.59 across all three R_int columns) found two
+distinct problems, not one:
+1. A **sign-flip cluster, mostly on `can_tapper14`**: `I_load_A` is
+   large-magnitude but *negative* (~-400 to -500 A) for real crank events
+   (10-17% voltage drop) — not a low-current issue, and R_int is still wrong
+   there (up to 8200 mΩ) for a reason not fully diagnosed (the per-start
+   R_int figure is computed upstream, inside the original zip export, not by
+   `build_boxer_can_features.py`). 50 starts total have negative `I_load_A`;
+   14 of those fall inside the tapper31 dropout window below and get that
+   flag instead; of the remaining 36, 31 are on `can_tapper14`.
+2. **Scattered low-current starts across nearly every tap**, not just the
+   already-documented `can_tapper31` dropout window: `I_load_A < 200 A`
+   (well below the ~300-500 A bulk) is where all three R_int columns cross
+   from a physically plausible range (median 9-12 mΩ, max 58-100 mΩ) into
+   implausible territory (max in the thousands of mΩ).
 
-`lab_field_feature_comparison.py`'s `_field_r_int_reliable_mask()` filters
-both patterns out (`|I_load_A| >= 150` AND `R_int_mohm <= 50`) before the
-field R_int series ever reaches this tab — excludes 231 of 4799 starts
-(~4.8%). This is a *diagnostic filter for the comparison tab*, not a fix to
-the underlying per-start feature computation — the raw, unfiltered columns
-in `boxer_can_features_enriched.csv` are untouched, and the Outlier
-Inspector tab (which flags on the raw `R_int_mohm` values) will still
-surface these same rows.
+**This is now a permanent, pipeline-baked flag, not a downstream filter.**
+`build_boxer_can_features.py`'s `add_r_int_validity_flags()` writes three
+columns straight into `boxer_can_features_enriched.csv` on every
+regeneration:
+- `invalid_R_int` (bool) — `I_load_A < 200` or missing. One shared flag for
+  all three R_int columns (they share the same current denominator; checked
+  that this is actually true rather than assumed — the three columns' own
+  NaN patterns differ slightly for unrelated reasons, but whether
+  `I_load_A` itself is trustworthy for a row does not).
+- `R_int_current_sensor_dropout` (bool) — the can_tapper31 window
+  specifically (a subset of `invalid_R_int` with a known root cause).
+- `R_int_negative_current` (bool) — `I_load_A < 0` (also a subset, also a
+  distinct, separately-flagged pattern).
+
+306 of 4799 starts (6.4%) are flagged. Every tab that plots R_int
+(Feature Trends, Tap Comparison, SoC & Temp Effects, Outlier Inspector, and
+the Lab vs Field Comparison tab via `lab_field_feature_comparison.py`) marks
+these points with `FLAGGED_MARKER` (grey ✕, same convention across every
+tab/dashboard) rather than excluding them — box/trend statistics are
+computed on the unflagged subset, but the points themselves stay visible.
+`can_tapper14`'s 17.9% flagged rate (vs. 0-12.5% on every other tap) has no
+identified root cause — see `dashboard_notes/outlier_known_incidents.md`.
+Full writeup with per-tapper breakdown:
+`exports/boxer_can_summary_export/NOTES.md`.
 
 ## Outlier Inspector tab
 
@@ -675,7 +694,8 @@ size before treating it as done (rough size ≈ n_unique_starts × 9001 rows ×
 |---|---|
 | `main_dashboard.py` | Unified dashboard — composes all four below into one app on one URL/port (5010); see its own module docstring for exactly what it reuses vs. builds fresh |
 | `boxer_can_dashboard.py` | The dashboard — Start Profile, Feature Trends, Tap Comparison, SoC & Temp Effects, Post-Start Stability, Outlier Inspector, Lab vs Field Comparison |
-| `build_boxer_can_features.py` | Reads raw zips (`--zips-dir`), writes `dataset_boxer_can/`; `--extract-outlier-traces` additionally writes the raw-trace drill-down files |
+| `build_boxer_can_features.py` | Reads raw zips (`--zips-dir`), writes `dataset_boxer_can/` (including the `invalid_R_int`/`R_int_current_sensor_dropout`/`R_int_negative_current` flag columns via `add_r_int_validity_flags()`); `--extract-outlier-traces` additionally writes the raw-trace drill-down files |
+| `exports/boxer_can_summary_export/` | R_int reliability diagnostic writeup + `summary_stats.csv`/`invalid_R_int_by_tapper.csv` for the CAN dataset — companion to `exports/RESULTS_SUMMARY_FOR_PAPER.md` §1 |
 | `lab_field_feature_comparison.py` | Lab-vs-field feature-family comparison logic for BOTH lab batteries (shared by `boxer_can_dashboard.py`'s tab, `main_dashboard.py`'s top-level section, and runnable standalone) |
 | `dataset_boxer_can/` | Git-tracked small per-start tables for all 15 taps + `outlier_raw_traces.csv`/`outlier_raw_events.csv` |
 | `dataset_boxer/start_data_battery/my_start_csv/` | The original 41-start-only dataset used by the separate, older `boxer_battery_dashboard.py` (kept intentionally — see that file's own docstring) |

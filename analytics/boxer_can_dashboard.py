@@ -19,12 +19,24 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from lab_field_feature_comparison import (
-    LAB_CSV, OLD_LAB_CSV, build_family_figure, build_matched_series, summary_table,
+    FLAGGED_MARKER, LAB_CSV, OLD_LAB_CSV, build_family_figure, build_matched_series, summary_table,
 )
 
 pn.extension("plotly", "tabulator")
 
 DATASHEET_IR_MOHM = 1.6  # mΩ AC internal resistance per battery (new, datasheet) -- same pack as dataset_boxer
+
+# `invalid_R_int` (+ R_int_current_sensor_dropout / R_int_negative_current
+# sub-flags) come from build_boxer_can_features.py's add_r_int_validity_flags()
+# -- a physically-motivated flag (I_load_A too low/missing/negative), never
+# conflated with this dashboard's generic Tukey-fence outlier detection
+# (Outlier Inspector tab). Reuses FLAGGED_MARKER from lab_field_feature_comparison.py
+# so the same grey-✕ convention means the same thing across every tab/dashboard.
+INVALID_R_INT_NOTE = (
+    "Grey ✕ points are flagged `invalid_R_int` (crank current too low, missing, or "
+    "sign-flipped -- see analytics/CLAUDE.md) -- shown, not deleted; excluded from "
+    "any trend line/box statistics on this chart."
+)
 
 # TAPPER_COLOURS is assigned dynamically below, once the actual set of
 # tappers present in the data is known (see _load() / TAPPERS).
@@ -152,15 +164,26 @@ def _build_trends_fig():
         (2, 1, "crank_duration_s", "Crank duration (s)"),
         (2, 2, "post_start_V_std_V", "Post-start V_std (V)"),
     ]
+    is_r_int_col = {col: (col == "R_int_mohm") for (_, _, col, _) in specs}
     for (r, c, col, lbl) in specs:
         for tap in TAPPERS:
             sub = f[f["can_tapper_id"] == tap]
+            if is_r_int_col[col] and "invalid_R_int" in sub.columns:
+                clean, flagged = sub[~sub["invalid_R_int"]], sub[sub["invalid_R_int"]]
+            else:
+                clean, flagged = sub, sub.iloc[0:0]
             fig.add_trace(go.Scatter(
-                x=sub["start_time"], y=sub[col],
+                x=clean["start_time"], y=clean[col],
                 mode="markers", name=tap, legendgroup=tap,
                 showlegend=(r == 1 and c == 1),
                 marker=dict(size=5, color=TAPPER_COLOURS.get(tap)),
             ), row=r, col=c)
+            if len(flagged):
+                fig.add_trace(go.Scatter(
+                    x=flagged["start_time"], y=flagged[col], mode="markers", showlegend=False,
+                    marker=FLAGGED_MARKER,
+                    hovertemplate=f"{tap}<br>%{{x}}<br>%{{y:.1f}}<br>⚠ flagged invalid_R_int<extra></extra>",
+                ), row=r, col=c)
         fig.update_yaxes(title_text=lbl, row=r, col=c)
         fig.update_xaxes(title_text="Start time", row=r, col=c, tickangle=25)
 
@@ -173,8 +196,11 @@ def _build_trends_fig():
 
     fig.update_layout(
         height=720, template="plotly_white",
-        title=f"Engine Start Feature Trends — {len(f)} starts across {len(TAPPERS)} taps",
-        margin=dict(t=80),
+        title=dict(
+            text=f"Engine Start Feature Trends — {len(f)} starts across {len(TAPPERS)} taps"
+                 f"<br><span style='font-size:12px;color:#52514e'>{INVALID_R_INT_NOTE}</span>",
+        ),
+        margin=dict(t=100),
     )
     return fig
 
@@ -189,12 +215,27 @@ def _build_tapper_fig():
         subplot_titles=["Voltage Drop (%)", "Internal Resistance (mΩ)", "Post-Start V_std (V)"],
     )
     for c, ykey in enumerate(["V_drop_total_pct", "R_int_mohm", "post_start_V_std_V"], start=1):
+        is_r_int = (ykey == "R_int_mohm") and "invalid_R_int" in f.columns
         for tap in TAPPERS:
-            sub = f[f["can_tapper_id"] == tap][ykey]
+            tap_df = f[f["can_tapper_id"] == tap]
+            if is_r_int:
+                clean, flagged = tap_df.loc[~tap_df["invalid_R_int"], ykey], tap_df.loc[tap_df["invalid_R_int"], ykey]
+            else:
+                clean, flagged = tap_df[ykey], tap_df[ykey].iloc[0:0]
             fig.add_trace(go.Box(
-                y=sub, name=tap, marker_color=TAPPER_COLOURS.get(tap),
+                y=clean, name=tap, marker_color=TAPPER_COLOURS.get(tap),
                 boxpoints="outliers", legendgroup=tap, showlegend=(c == 1),
             ), row=1, col=c)
+            if len(flagged):
+                # Same category (tap name) so it aligns at the same x slot;
+                # box/line hidden so only the flagged points themselves show.
+                fig.add_trace(go.Box(
+                    y=flagged, name=tap, marker=FLAGGED_MARKER,
+                    boxpoints="all", jitter=0.5, pointpos=0,
+                    line=dict(color="rgba(0,0,0,0)", width=0), fillcolor="rgba(0,0,0,0)",
+                    showlegend=False,
+                    hovertemplate=f"{tap}<br>%{{y:.1f}}<br>⚠ flagged invalid_R_int<extra></extra>",
+                ), row=1, col=c)
     fig.add_hline(
         y=DATASHEET_IR_MOHM, row=1, col=2,
         line=dict(color="black", dash="dot", width=1),
@@ -203,9 +244,12 @@ def _build_tapper_fig():
     )
     fig.update_layout(
         height=520, template="plotly_white",
-        title=f"Per-Tap Comparison — {len(TAPPERS)} CAN Taps",
+        title=dict(
+            text=f"Per-Tap Comparison — {len(TAPPERS)} CAN Taps"
+                 f"<br><span style='font-size:12px;color:#52514e'>{INVALID_R_INT_NOTE}</span>",
+        ),
         legend=dict(orientation="h", y=-0.22, x=0.15),
-        margin=dict(t=80, b=100),
+        margin=dict(t=100, b=100),
     )
     return fig
 
@@ -219,24 +263,40 @@ def _build_soc_temp_fig():
         horizontal_spacing=0.14,
         subplot_titles=["Voltage Drop vs SoC at Start", "Internal Resistance vs SoC at Start"],
     )
-    common_marker = dict(size=7, color=f["temp_avg_start_C"], colorscale="RdYlBu_r",
-                          line=dict(width=0.5, color="white"))
+    def _temp_marker(sub):
+        return dict(size=7, color=sub["temp_avg_start_C"], colorscale="RdYlBu_r", line=dict(width=0.5, color="white"))
+
     fig.add_trace(go.Scatter(
         x=f["soc_pct_est_pack"], y=f["V_drop_total_pct"], mode="markers", showlegend=False,
-        marker=dict(**common_marker, showscale=True, colorbar=dict(title="Temp<br>(°C)", thickness=14, x=0.44)),
+        marker=dict(**_temp_marker(f), showscale=True, colorbar=dict(title="Temp<br>(°C)", thickness=14, x=0.44)),
     ), row=1, col=1)
+
+    if "invalid_R_int" in f.columns:
+        clean, flagged = f[~f["invalid_R_int"]], f[f["invalid_R_int"]]
+    else:
+        clean, flagged = f, f.iloc[0:0]
     fig.add_trace(go.Scatter(
-        x=f["soc_pct_est_pack"], y=f["R_int_mohm"], mode="markers", showlegend=False,
-        marker=dict(**common_marker, showscale=True, colorbar=dict(title="Temp<br>(°C)", thickness=14, x=1.01)),
+        x=clean["soc_pct_est_pack"], y=clean["R_int_mohm"], mode="markers", showlegend=False,
+        marker=dict(**_temp_marker(clean), showscale=True, colorbar=dict(title="Temp<br>(°C)", thickness=14, x=1.01)),
     ), row=1, col=2)
+    if len(flagged):
+        fig.add_trace(go.Scatter(
+            x=flagged["soc_pct_est_pack"], y=flagged["R_int_mohm"], mode="markers", showlegend=False,
+            marker=FLAGGED_MARKER,
+            hovertemplate="%{x}% SoC<br>%{y:.1f} mΩ<br>⚠ flagged invalid_R_int<extra></extra>",
+        ), row=1, col=2)
+
     for c in [1, 2]:
         fig.update_xaxes(title_text="SoC at start (%)", row=1, col=c)
     fig.update_yaxes(title_text="Voltage drop (%)", row=1, col=1)
     fig.update_yaxes(title_text="R_internal (mΩ)", row=1, col=2)
     fig.update_layout(
         height=460, template="plotly_white",
-        title="SoC & Temperature Effect on Engine Start Performance (colour = battery temperature)",
-        margin=dict(t=80),
+        title=dict(
+            text="SoC & Temperature Effect on Engine Start Performance (colour = battery temperature)"
+                 f"<br><span style='font-size:12px;color:#52514e'>{INVALID_R_INT_NOTE}</span>",
+        ),
+        margin=dict(t=100),
     )
     return fig
 
@@ -302,7 +362,18 @@ def _outlier_frame(feature_key: str, tap: str, k: float):
 def _build_outlier_timeline(feature_key: str, tap: str, k: float) -> go.Figure:
     f, mask = _outlier_frame(feature_key, tap, k)
     label = next(lbl for lbl, key in OUTLIER_FEATURES.items() if key == feature_key)
-    normal, outliers = f[~mask], f[mask]
+
+    # invalid_R_int is a separate, physically-motivated flag (I_load_A too
+    # low/missing/negative) -- never conflated with the generic Tukey-fence
+    # `mask` above, and only relevant when R_int itself is the selected
+    # feature. A row flagged invalid_R_int is shown with FLAGGED_MARKER
+    # regardless of whether it also happens to be a Tukey outlier, so the
+    # three buckets (normal / Tukey outlier / invalid_R_int) are disjoint.
+    is_r_int = (feature_key == "R_int_mohm") and "invalid_R_int" in f.columns
+    invalid_mask = f["invalid_R_int"] if is_r_int else pd.Series(False, index=f.index)
+    normal = f[~mask & ~invalid_mask]
+    outliers = f[mask & ~invalid_mask]
+    invalid = f[invalid_mask]
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -315,6 +386,13 @@ def _build_outlier_timeline(feature_key: str, tap: str, k: float) -> go.Figure:
         marker=dict(size=12, color="#e34948", symbol="circle-open", line=dict(width=2.5)),
         text=outliers["can_tapper_id"], hovertemplate="%{text}<br>%{x}<br>%{y:.2f}<extra></extra>",
     ))
+    if is_r_int:
+        fig.add_trace(go.Scatter(
+            x=invalid["start_time"], y=invalid[feature_key], mode="markers", name=f"Invalid R_int (n={len(invalid)})",
+            marker=FLAGGED_MARKER,
+            text=invalid["can_tapper_id"],
+            hovertemplate="%{text}<br>%{x}<br>%{y:.2f}<br>⚠ flagged invalid_R_int<extra></extra>",
+        ))
     fig.update_layout(
         height=420, template="plotly_white",
         title=f"{label} over time" + (f" — {tap}" if tap != "All taps" else " — all taps"),
@@ -344,6 +422,8 @@ def _refresh_outlier_table(feature_key: str, tap: str, k: float) -> None:
     flagged = f[mask].sort_values("start_time").copy()
     cols = ["start_index", "start_time", "can_tapper_id", feature_key, "I_load_A", "delta_I_A",
             "V_pre_group_avg_V", "post_start_V_mean_V", "temp_avg_start_C", "soc_pct_est_pack"]
+    if feature_key == "R_int_mohm":
+        cols += ["invalid_R_int", "R_int_current_sensor_dropout", "R_int_negative_current"]
     cols = [c for c in cols if c in flagged.columns]
     flagged = flagged[cols].round(3).reset_index(drop=True)
     OUTLIER_TABLE.titles = {"start_index": "Start #", "can_tapper_id": "Tap", feature_key: label_for_col(feature_key)}

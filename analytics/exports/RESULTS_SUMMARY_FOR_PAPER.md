@@ -59,15 +59,28 @@ strong, specific correlation.
   all-positive (no negative-value issue) but very wide. **Use the median, not
   mean/max, if citing these**: driving_aux median = 319 mΩ, ramp_like median
   = 115 mΩ — both far below their means, confirming a heavy right tail.
-- **`boxer` (field data) does *not* need this kind of filter** — but for a
-  different reason, itself worth stating in the paper: there is **no per-row
-  current column in the field dataset at all**. `R_int_mohm` is derived from
-  voltage drop and an *estimated*, not measured, crank current (confirmed:
-  `R_int_mohm` correlates **r = 0.95** with `V_drop_pct`, and their ratio is
-  nearly constant per pack group, ~0.28–0.29 with low spread) — so field
-  R_int is not an independent measurement, it's a near-linear rescaling of
-  V_drop. Report it as such rather than as directly comparable to the lab's
-  genuinely current-derived R_int.
+- **`boxer` (the OLD 41-start field export) does *not* need this kind of
+  filter** — but for a different reason, itself worth stating in the paper:
+  there is **no per-row current column in that field dataset at all**.
+  `R_int_mohm` is derived from voltage drop and an *estimated*, not measured,
+  crank current (confirmed: `R_int_mohm` correlates **r = 0.95** with
+  `V_drop_pct`, and their ratio is nearly constant per pack group, ~0.28–0.29
+  with low spread) — so field R_int is not an independent measurement, it's a
+  near-linear rescaling of V_drop. Report it as such rather than as directly
+  comparable to the lab's genuinely current-derived R_int.
+- **`boxer_can` (the NEWER, much larger 15-tap/4799-start field CAN export)
+  DOES need this filter, and hadn't had it run — now done (2026-08-20).**
+  Unlike the old 41-start export above, this one logs a real per-row
+  `I_load_A`, and the same low-current diagnostic applies: Spearman
+  r(I_load_A, R_int) = -0.52 to -0.59 across all three R_int columns, with a
+  200A threshold separating a physically plausible range (median 9-12 mΩ,
+  max 58-100 mΩ) from implausible territory (max in the thousands of mΩ).
+  306 of 4799 starts (6.4%) are now flagged `invalid_R_int` directly in
+  `boxer_can_features_enriched.csv` (not just filtered downstream) — plus two
+  sub-flags for a known-cause current-sensor dropout and a separate
+  sign-flip artifact concentrated on one tap. Full writeup, per-tapper
+  breakdown, and a caveat about correlations that don't carry over from the
+  single-pack case: `exports/boxer_can_summary_export/NOTES.md`.
 
 ## 2. Feature parity: what the lab computes vs. what the field computes, and what closing the gap needs
 
