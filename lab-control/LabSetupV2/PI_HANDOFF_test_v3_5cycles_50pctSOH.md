@@ -220,3 +220,164 @@ Kanttekeningen:
   een keuze die je vóór de start moet maken.
 - Elke onbedoelde stilstand komt er bovenop. De gemiddelde blokduur is ±1,5
   dag, dus een crash die een nacht + dag onopgemerkt blijft, kost ±10 %.
+
+---
+
+# Deel 2 — SoC-sweep op Ah-basis in plaats van OCV-doelen (toegevoegd 2026-10-30)
+
+## Analyse: waarom de SoC-punten dicht op elkaar lagen
+
+Per test-day-run van `ul18_12_unit2` is de werkelijke SoC teruggerekend met
+Coulomb counting vanaf de volle sweep-lading. Dat is gedaan relatief aan de
+C/5-capaciteit van datzelfde blok, met de gemeten Ah uit de BDPS-logs van de
+step-downs én de profielen:
+
+| Blok | C5 (Ah) | Werkelijke SoC bij de 10 runs (%) | OCV-label (V) |
+|---|---|---|---|
+| 1 | 18,2 | 100, 67, 58, 50, 41, 36, 32, 23, 17, 12 | 13,54 → 11,73 |
+| 3 | 13,9 | 100, 62, 51, 39, 33, 27, 21, 15, 8, 2 | 13,39 → 11,80 |
+| 6 | 14,0 | 100, 52, 40, 29, 23, 17, 11, 7, 4, 2 | 13,61 → 11,83 |
+| 8 | 10,2 | 100, 34, 18, 11, 6, 4, 2, 0, −1, −2 | 13,56, 12,49, 12,28 … 12,18 |
+| 9 | 9,0 | 100, 33, 17, 10, 7, 5, 4, 3, 2, 1 | 13,55, 12,57, 12,35 … 12,34 |
+| 10 | 7,4 | 100, 18, 8, 3, 1, −1 … −7 | 13,59, 12,54, 12,50 … 12,45 |
+
+Een negatieve SoC betekent dat er meer Ah is afgegeven dan de C/5-capaciteit.
+Dat kan bij de lage gemiddelde stroom van het profiel, maar in de praktijk is
+de accu dan leeg.
+
+Er zijn vier oorzaken, in volgorde van impact:
+
+1. **De OCV-tabel klopt niet voor deze AGM-accu, vooral bovenin.** Na 120 s
+   rust na een lading op 14,4 V leest de accu 13,4–13,6 V (oppervlaktelading).
+   De pulse-loop ontlaadt daarom door tot de OCV ≤ 12,58 V ("90 %"), en dat
+   kost elke keer 5–7 Ah: 33 % van de capaciteit in blok 1, 66 % in blok 8 en
+   82 % in blok 10. Het eerste "90 %"-punt ligt in werkelijkheid op 67 %
+   (blok 1) tot 18 % (blok 10). Een volle UL18-12 zit na echte rust eerder
+   rond 12,9–13,0 V dan op de aangenomen 12,70 V.
+2. **De OCV–SoC-relatie verschuift met veroudering.** Vanaf blok 8 is de accu
+   (Coulomb-geteld) al leeg, terwijl de OCV nog 12,2–12,7 V aangeeft. Volgens
+   de tabel is dat 50–90 %. De step-down ziet dan "OCV ≤ doel" en ontlaadt
+   niet meer, dus alle volgende profielen draaien op dezelfde lege accu. De
+   labels clusteren daardoor rond 12,2–12,5 V. Het profiel kan zijn stroom
+   niet meer leveren (netto Ah per run zakt van 0,84 naar 0,08 Ah) en de
+   crank-Vmin zakt tot ~9,9 V.
+3. **Het profiel zelf bepaalt de stapgrootte.** Een test-day-run haalt gemeten
+   ~0,84 Ah netto uit de accu (1,03 Ah ontladen, 0,20 Ah geladen). Na de run
+   ligt de OCV na 120 s vaak al onder het volgende doel, dus er wordt niet
+   ontladen ("rest-first"). Het interval wordt dan 0,84 Ah in plaats van 10 %:
+   dat is 4,6 % bij 18 Ah en 8 % bij 10 Ah.
+   *Neveneffect om te controleren:* volgens `test_day_profile_new.csv` zou het
+   profiel netto maar 0,27 Ah moeten ontladen (0,46 Ah ontladen, 0,20 Ah
+   geladen). Gemeten is 1,03 Ah ontladen, vooral in `wakeup_load` (0,42 Ah)
+   en `driving_aux_load` (0,45 Ah). Ergens in de replay ontstaat dus ongeveer
+   2× zoveel ontlaadstroom als bedoeld.
+4. **De stappen zijn grof en de rust is kort.** Eén puls is 300 s × 9 A =
+   0,75 Ah (4 % bij 18 Ah, 8 % bij 9 Ah), dus het doel wordt nooit precies
+   geraakt. Daarnaast is 120 s rust te kort voor een stabiele OCV: na een
+   cutoff stijgt de OCV binnen een paar minuten nog 0,2–0,3 V.
+
+Ook met het nieuwe stopcriterium (50 % SOH ≈ 9 Ah) speelt dit nog. Blok 8–9
+van de vorige test, die rond dat punt lagen, hadden precies dit gedrag
+(100, 34, 18, 11, 6, … %).
+
+Het oorspronkelijke argument voor OCV in `../CLAUDE.md` ("1,8 Ah vast is
+betekenisloos bij een verouderde accu") geldt voor stappen op basis van de
+*nominale* 18 Ah. Het geldt niet voor stappen op basis van de C/5-capaciteit
+die in hetzelfde blok vlak vóór de sweep is gemeten. Die is in het lab bekend.
+De OCV blijft gewoon gelogd als veld-observeerbaar label en feature.
+
+## Prompt 2 voor Claude Code (kopieer vanaf hier)
+
+Lees `../CLAUDE.md` en dit bestand (deel 1 en 2). Pas de SoC-sweep in
+`backend.py` (`_run_soc_sweep`) aan: **stap af op Ah relatief aan de
+C/5-capaciteit van hetzelfde blok** in plaats van op OCV-doelwaarden. De OCV
+wordt alleen nog gemeten en gelogd als label/feature, want dat is wat in het
+veld beschikbaar is. Hij wordt niet meer gebruikt om te sturen. Draai niets
+op de hardware zolang er een test loopt.
+
+1. **Constanten**
+   ```python
+   SWEEP_MODE          = "ah"    # "ocv" = oude methode als terugvaloptie
+   SWEEP_SOC_TARGETS   = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]  # % van C5 van dit blok
+   SWEEP_STEP_CURRENT  = 3.6     # A (C/5): zelfde rate als de SOH-meting, minder polarisatie dan 9 A
+   SWEEP_REST_S        = 1800    # vaste open-klem-rust vóór elke profielrun (ook de 100 %-run)
+   SWEEP_CUTOFF_V      = 10.8
+   ```
+   Laat `OCV_SOC_TABLE`, `OCV_PULSE_S` en `discharge_cc_to_ocv_target` bestaan
+   (niet verwijderen). Ze worden alleen gebruikt als `SWEEP_MODE == "ocv"`.
+2. **Referentiecapaciteit.** Gebruik de C/5-capaciteit die in **hetzelfde
+   blok** net vóór de sweep is gemeten (de return-waarde van
+   `_run_discharge_c5_block` / `_block_summary.csv`). Bij hervatten midden in
+   een sweep lees je hem uit `_block_summary.csv`. Bij een standalone sweep
+   (via de knop) neem je de laatste C/5 uit `_block_summary.csv`. Is die er
+   niet, log dan een waarschuwing en gebruik 18,0 Ah nominaal.
+3. **De profielrun telt mee.** Laat `_run_profile_sync` ook de **gemeten**
+   netto Ah vastleggen in `self.last_profile_net_ah`: integreer de gemeten
+   BDPS-stroom × de werkelijke dt per sample, met ontladen negatief. Laat de
+   return-waarde True/False ongewijzigd. Gebruik niet de nominale waarde uit
+   de CSV: gemeten is ~0,84 Ah netto, nominaal maar 0,27 Ah.
+4. **Sweep-volgorde**
+   - Doe de sweep-lading (taper, max `FULL_CHARGE_MAX_H`) en zet
+     `removed_ah = 0`.
+   - Voor elk doel `s` in `SWEEP_SOC_TARGETS`:
+     - `target_removed = (100 - s) / 100 * C5_block`
+     - `step = target_removed - removed_ah`. Is `step > 0.05` Ah, ontlaad dan
+       met de bestaande methode `bdps.discharge_cc_fixed_ah(current=SWEEP_STEP_CURRENT,
+       target_ah=step, cutoff_voltage=SWEEP_CUTOFF_V, ...)` en tel de werkelijk
+       ontladen Ah op bij `removed_ah`. Is `step ≤ 0.05` (het profiel heeft al
+       genoeg weggehaald), sla de ontlading over en log dat.
+     - Haalt de step-down 10,8 V voordat `step` bereikt is (afgegeven Ah
+       < `step` − 0,05), log dat dan, draai **geen** profiel meer en beëindig
+       de sweep netjes (return True).
+     - Rust `SWEEP_REST_S` met de output uit, check `stop_event` elke seconde,
+       log V elke 10 s met Mode `REST` en lees aan het eind de OCV.
+     - Draai het profiel en tel `-self.last_profile_net_ah` op bij `removed_ah`.
+   - Log per run in de console: doel-SoC, werkelijke SoC vóór de run
+     (`100 * (1 - removed_ah / C5_block)`), OCV na rust en profiel-netto-Ah.
+5. **Bestandsnamen en logging.** Gebruik de doel-SoC in de naam met de OCV
+   erachter, zodat de bestaande analyse-regex `OCV(\d+)p(\d+)V` blijft werken:
+   `Block_<nn>_SoC070_OCV12p41V_testday_bdps_<ts>.csv`, en idem voor
+   `_stepdown_` en `_rest_`. Schrijf daarnaast per run een rij naar
+   `LOG_ROOT/<battery_id>/_sweep_points.csv` met: `block, run, target_soc_pct,
+   soc_cc_pct, removed_ah_before_run, c5_block_ah, ocv_after_rest, rest_s,
+   profile_net_ah, step_ah, step_hit_cutoff, testday_file, battery_id`.
+6. **Checkpoint.** Sla binnen de sweep `sweep_run` en `removed_ah` op in het
+   checkpoint, zodat een hervatting midden in de sweep weet waar hij is. Bij
+   een onbedoeld gat (deel 1, punt 5) start de sweep na de extra volle lading
+   opnieuw vanaf 100 %, want de Coulomb-telling klopt dan niet meer.
+7. **Profiel-replay controleren (alleen rapporteren).** Vergelijk voor één
+   bestaande test-day-log de gemeten stroom per `Event_Type` met de setpoints
+   uit `test_day_profile_new.csv`. Neem bijvoorbeeld
+   `ul18_12_unit2/Block_01_OCV12p44V_testday_bdps_*.csv`, als die op de USB
+   staat. Gemeten is ~1,03 Ah ontladen tegen 0,46 Ah nominaal, vooral in
+   `wakeup_load` en `driving_aux_load`. Zoek uit waar het verschil ontstaat:
+   blijft een setpoint hangen na een polariteitswissel, of werkt de
+   snap-to-zero onder 0,2 A niet goed? Rapporteer en stel een fix voor, maar
+   **pas de replay pas aan na akkoord van de gebruiker**.
+8. **Tests.** Breid `tests/test_plan_logic.py` uit met een `FakeBDPS` waarvan
+   `discharge_cc_fixed_ah` precies `target_ah` teruggeeft (of minder, om een
+   cutoff na X Ah te simuleren), en een nep-profiel dat −0,84 Ah netto geeft.
+   Controleer:
+   - de 10 runs liggen op een werkelijke SoC van 100, 90, …, 10 % (±1 %), zowel
+     bij C5 = 18 Ah als bij C5 = 9 Ah;
+   - stappen worden overgeslagen als het profiel al genoeg heeft weggehaald;
+   - bij een cutoff halverwege stopt de sweep zonder verdere profielruns;
+   - hervatten met `sweep_run = 6` gaat verder bij run 6, met de juiste
+     `removed_ah`;
+   - `SWEEP_MODE = "ocv"` geeft nog het oude gedrag.
+9. Werk `../CLAUDE.md` bij. De sectie "SoC Sweep — OCV-Based Step-Down" wordt
+   "SoC Sweep — Ah-based step-down", met een korte reden (de analyse
+   hierboven), de nieuwe constanten en de nieuwe bestandsnamen. Commit op de
+   branch en laat de diff zien.
+
+(kopieer tot hier)
+
+## Effect op de testduur
+
+Per blok komt er 10 × 28 min extra rust bij (≈ 4,7 h). De step-downs gaan op
+C/5 in plaats van C/2. De totale Ah per sweep blijft ≈ 0,9 × C5, maar het
+ontladen duurt langer: ≈ 1–2 h extra per blok. Bij ±16 blokken is dat
+**≈ +4 dagen**. De verwachte totale duur gaat daarmee van ≈ 24 naar
+**≈ 28 dagen** (bereik 23–33). Met `SWEEP_REST_S = 900` wordt het ≈ +2 dagen.
+De rust moet wel voor elke run gelijk zijn, anders zijn de OCV-features
+onderling niet vergelijkbaar.
