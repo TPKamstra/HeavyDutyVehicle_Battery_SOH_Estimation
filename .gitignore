@@ -27,3 +27,6 @@ env/
 .DS_Store
 Thumbs.db
 .ipynb_checkpoints/
+
+# Mail recipients for pi_daily_report.py: personal addresses, never in this public repo
+analytics/pi_daily_report_config.json

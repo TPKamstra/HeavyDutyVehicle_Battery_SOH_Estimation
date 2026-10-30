@@ -696,6 +696,27 @@ size before treating it as done (rough size ≈ n_unique_starts × 9001 rows ×
 | `boxer_can_dashboard.py` | The dashboard — Start Profile, Feature Trends, Tap Comparison, SoC & Temp Effects, Post-Start Stability, Outlier Inspector, Lab vs Field Comparison |
 | `build_boxer_can_features.py` | Reads raw zips (`--zips-dir`), writes `dataset_boxer_can/` (including the `invalid_R_int`/`R_int_current_sensor_dropout`/`R_int_negative_current` flag columns via `add_r_int_validity_flags()`); `--extract-outlier-traces` additionally writes the raw-trace drill-down files |
 | `exports/boxer_can_summary_export/` | R_int reliability diagnostic writeup + `summary_stats.csv`/`invalid_R_int_by_tapper.csv` for the CAN dataset — companion to `exports/RESULTS_SUMMARY_FOR_PAPER.md` §1 |
+| `pi_daily_report.py` | Daily Pi watchdog: sync logs over SSH + Gmail status mail (scheduled task `PiDailyReport`, see section below) |
 | `lab_field_feature_comparison.py` | Lab-vs-field feature-family comparison logic for BOTH lab batteries (shared by `boxer_can_dashboard.py`'s tab, `main_dashboard.py`'s top-level section, and runnable standalone) |
 | `dataset_boxer_can/` | Git-tracked small per-start tables for all 15 taps + `outlier_raw_traces.csv`/`outlier_raw_events.csv` |
 | `dataset_boxer/start_data_battery/my_start_csv/` | The original 41-start-only dataset used by the separate, older `boxer_battery_dashboard.py` (kept intentionally — see that file's own docstring) |
+
+## Daily Pi watchdog (`pi_daily_report.py`) — added 2026-10-30
+
+Laptop-side, stdlib-only. Windows scheduled task **`PiDailyReport`** runs it
+daily at 08:00 (`ddsm\pythonw.exe`, "start when available", so a sleeping
+laptop catches up on wake). Each run: one read-only SSH probe of the Pi
+(`BatteryTestPi` alias in `~/.ssh/config`, key `key_pi`) → tar-over-SSH sync
+of new/grown files from `/media/pi/LOGBATTEST/<BATTERY_ID>/` into
+`BatPi_Download\LOGBATTEST\<BATTERY_ID>\` → health checks (heartbeat age,
+newest log age, service state, journal HALTED/UNPLANNED GAP/Traceback,
+`_events.csv`, SOH jumps and charge timeouts in `_block_summary.csv`, sweep
+target-vs-Coulomb SoC in `_sweep_points.csv`, USB free space, dashboard RSS)
+→ Gmail mail to `MAIL_TO` (Gmail + UT address), subject `OK` / `ACTIE NODIG`.
+
+- Gmail app password lives only in Windows Credential Manager, generic
+  target `pi_daily_report` (`cmdkey /generic:pi_daily_report /user:<gmail> /pass`).
+  Mail failures go to `BatPi_Download\LOGBATTEST\_daily_report_errors.log`.
+- Last report is also written to `BatPi_Download\LOGBATTEST\_daily_report_<id>.html`.
+- **Update `BATTERY_ID` at the top of the script when the Pi switches battery.**
+- Manual: `python pi_daily_report.py --no-mail` (sync + print), add `--no-sync` to skip copying.

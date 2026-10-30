@@ -11,6 +11,7 @@ from operational vehicles to check whether those features transfer.
 | `main.tex`, `references.bib`, `zotero-library.bib` | The paper (Overleaf-synced — pulling from this repo, don't hand-edit conflicting sections without checking git history for Overleaf commits first). |
 | `lab-control/` | Pi-side code that actually runs the lab test bench (`backend.py`, `Classes/`, Arduino sensor code). Has its own `CLAUDE.md`. |
 | `analytics/` | Dashboards + analysis code that turn the lab/field logs into features. Has its own `CLAUDE.md` with full technical detail (event schema, known data-quality incidents, per-battery specifics). |
+| `analytics/FEATURE_OVERVIEW.md` | What every lab (test-day v2) and field (Boxer CAN) feature is, how it's computed, its lab SOH/SoC correlation, and its field counterpart (or why there isn't one). |
 | `analytics/exports/*_summary_export/` | **Small, static, git-tracked result bundles** — CSV/JSON summary stats + PNG charts, safe to reference directly when writing the paper. No raw dataset in git (gitignored — see `analytics/CLAUDE.md` and root `.gitignore`). |
 
 ## For filling in the paper's Results section (`\label{sec:results}`)
