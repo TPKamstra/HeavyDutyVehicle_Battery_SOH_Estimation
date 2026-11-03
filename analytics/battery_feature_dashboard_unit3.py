@@ -21,7 +21,7 @@ The test is still running, so every tab handles missing and half-written files.
 Use **Rescan** to pick up files synced by pi_daily_report.py.
 
 Run with:
-    panel serve battery_feature_dashboard_unit3.py --show
+    panel serve battery_feature_dashboard_unit3.py --port 5011 --show
 """
 
 import hashlib
@@ -554,7 +554,9 @@ def _run_quality_impl(path: str) -> dict:
 
 
 def run_quality(path: str) -> dict:
-    return v2feat.cached_call("unit3_quality_v3", (path, v2feat._fingerprint(path)), lambda: _run_quality_impl(path))
+    # Known profiles are part of the key: adding one must re-check runs cached as unknown.
+    key = (path, v2feat._fingerprint(path), tuple(sorted(_PROFILES)))
+    return v2feat.cached_call("unit3_quality_v3", key, lambda: _run_quality_impl(path))
 
 
 # Which raw feature columns rest on which scripted discharge event. A feature is
@@ -631,7 +633,8 @@ def analysis_view(df: pd.DataFrame, include_invalid: bool) -> pd.DataFrame:
     if not include_invalid:
         for i, r in out.iterrows():
             cols = _invalid_columns(out.columns, r["failed_events"])
-            if not r["discharge_tracking_ok"] and r["profile_cap"] is None:
+            if not r["discharge_tracking_ok"] and not r["failed_events"]:
+                # Never checked (unknown profile, unreadable log), so nothing vouches for it.
                 cols = _invalid_columns(out.columns, set(range(13)))
             if cols:
                 out.loc[i, cols] = np.nan
@@ -1500,7 +1503,8 @@ def _update_header() -> None:
         quality_banner.object = (
             f"**{n_bad} of {len(done)} finished run(s) failed the setpoint check**, normally the runs from before "
             "the Pi fix of 2026-11-02, when discharge current stayed frozen. Features from the failed events are "
-            "hidden in SoC Sweep, Degradation Trends and Feature Correlations unless you tick the box below."
+            "hidden in the SoC Sweep and Degradation Trends charts and in Feature Correlations unless you tick the "
+            "box below. Tables and the Excel export keep the raw values, with `discharge_tracking_ok` next to them."
         )
         quality_banner.visible = True
     else:

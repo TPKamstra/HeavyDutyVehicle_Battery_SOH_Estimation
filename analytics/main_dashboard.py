@@ -136,10 +136,10 @@ def _build_comparison_section() -> pn.Column:
         for _, r in summary.iterrows()
     )
     intro = pn.pane.Markdown(
-        "**Feature-family consistency check, not a value-for-value validation** — both lab "
-        "batteries (`old_ul18_12`, `unit2`) vs. the field Boxer CAN dataset. See "
+        "**Feature-family consistency check, not a value-for-value validation** — the lab "
+        "battery `unit2` vs. the field Boxer CAN dataset. See "
         "`lab_field_feature_comparison.py`'s module docstring for the full framing, the lab "
-        "crank-current caveat, and the field R_int reliability filter (excludes ~4.8% of field "
+        "crank-current caveat, and the field R_int reliability filter (excludes ~6.4% of field "
         "starts -- a sign-flip cluster on `can_tapper14` plus scattered near-zero-current starts "
         "across most other taps).",
         sizing_mode="stretch_width", margin=(0, 20, 10, 20),

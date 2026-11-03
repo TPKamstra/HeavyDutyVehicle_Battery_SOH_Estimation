@@ -41,16 +41,19 @@ dashboard, pick a free port outside this list.
 | 5007 | `boxer_battery_dashboard.py` | field, old 41-start dataset | `analytics/` (git-tracked data) |
 | 5008 | `battery_feature_dashboard_unit2.py` | lab, `ul18_12_unit2` | needs `ul18_12_unit2/` log folder — see `BATPI_DATA_DIR` below |
 | 5009 | `boxer_can_dashboard.py` | field, 15 CAN taps / 4799 starts | `analytics/` (git-tracked data) |
-| 5010 | `main_dashboard.py` (unified, all four above composed into one app) | all of the above | needs the lab log folders too — see `BATPI_DATA_DIR` below |
+| 5010 | `main_dashboard.py` (unified; every lab dashboard + `boxer_can_dashboard.py` in one app) | all of those | needs the lab log folders too — see `BATPI_DATA_DIR` below |
 | 5011 | `battery_feature_dashboard_unit3.py` | lab, `ul18_12_unit3` | needs `LOGBATTEST/ul18_12_unit3/`, filled by `pi_daily_report.py` |
 
+`panel serve` does not read the `port=` in a script's `__main__` block and
+defaults to 5006 (checked 2026-11-03), so pass the port. Two dashboards started
+without it collide on 5006.
 ```
-panel serve battery_feature_dashboard.py --show          # port 5006
-panel serve boxer_battery_dashboard.py --show             # port 5007
-panel serve battery_feature_dashboard_unit2.py --show     # port 5008
-panel serve boxer_can_dashboard.py --show                 # port 5009
-panel serve main_dashboard.py --show                      # port 5010
-panel serve battery_feature_dashboard_unit3.py --show     # port 5011
+panel serve battery_feature_dashboard.py --port 5006 --show
+panel serve boxer_battery_dashboard.py --port 5007 --show
+panel serve battery_feature_dashboard_unit2.py --port 5008 --show
+panel serve boxer_can_dashboard.py --port 5009 --show
+panel serve main_dashboard.py --port 5010 --show
+panel serve battery_feature_dashboard_unit3.py --port 5011 --show
 ```
 
 ### Where the raw lab data lives — run every dashboard from this git checkout
@@ -613,25 +616,20 @@ python build_boxer_can_features.py --zips-dir "C:\Users\TPKam\OneDrive - Univers
 
 ## `lab_field_feature_comparison.py` — Lab vs Field Comparison tab
 
-Matches three feature families with a genuine counterpart on **both lab
-batteries** (`old_ul18_12`, `exports/old_ul18_12_summary_export/testday_v2_beta_partial.csv`,
-8 runs, partial v2-schema rollout; `ul18_12_unit2`,
-`exports/ul18_12_unit2_summary_export/testday_features.csv`, 140 runs) and
-the field (Boxer CAN) side: crank apparent internal resistance, post-crank
-recovery voltage, post-crank voltage stability. Framed explicitly as a
-*feature-family consistency check*, not a value-for-value validation —
-different battery products, separate pipelines, no shared ground-truth SOH
-on the field side. `old_ul18_12`'s 8-run sample is a coarse spot-check, not
-statistically weighted equally against `unit2`'s 140 runs.
+Matches three feature families with a genuine counterpart on the lab battery
+`ul18_12_unit2` (`exports/ul18_12_unit2_summary_export/testday_features.csv`,
+140 runs) and the field (Boxer CAN) side: crank apparent internal resistance,
+post-crank recovery voltage, post-crank voltage stability. Framed explicitly as
+a *feature-family consistency check*, not a value-for-value validation —
+different battery products, separate pipelines, no shared ground-truth SOH on
+the field side. `old_ul18_12` (8 runs) was dropped from this comparison on
+2026-08-26 as too thin a sample; it keeps its own dashboard.
 
-Each family gets its own figure with one box+strip panel *per
-(battery, condition)* — lab old_ul18_12 cold-crank / old_ul18_12 hot-crank /
+Each family gets its own figure with one box+strip panel *per condition* —
 unit2 cold-crank / unit2 hot-crank / field, etc. — never pooled. Color
 convention: blue = lab, orange = field (fixed); within lab, the light/dark
-blue shade normally distinguishes cold vs. hot condition, but for the
-single-condition V_std family (no cold/hot axis) it distinguishes battery
-identity instead (old_ul18_12 vs. unit2) — battery/condition identity is
-always in the panel's text label too, never carried by color alone. Panel
+blue shade distinguishes cold vs. hot condition. The condition is always in the
+panel's text label too, never carried by color alone. Panel
 axes are capped to a robust (Tukey k=3 IQR) range so a few extreme points
 can't compress the rest of the distribution into an unreadable sliver; each
 panel's subtitle reports how many points were clipped and the most extreme
@@ -879,13 +877,13 @@ against SoC.
 
 | File | Role |
 |---|---|
-| `main_dashboard.py` | Unified dashboard — composes all four below into one app on one URL/port (5010); see its own module docstring for exactly what it reuses vs. builds fresh |
+| `main_dashboard.py` | Unified dashboard — composes the lab dashboards and `boxer_can_dashboard.py` into one app on one URL/port (5010); see its own module docstring for exactly what it reuses vs. builds fresh |
 | `boxer_can_dashboard.py` | The dashboard — Start Profile, Feature Trends, Tap Comparison, SoC & Temp Effects, Post-Start Stability, Outlier Inspector, **Feature vs SoC**, **Group Effects / ANOVA**, Lab vs Field Comparison |
 | `can_stats.py` | Statistics behind the Feature vs SoC / ANOVA tabs — pure pandas/numpy/scipy, no Panel/Plotly, so the numbers can be recomputed in an export script without starting a server. See "Statistical analysis" below |
 | `build_boxer_can_features.py` | Reads raw zips (`--zips-dir`), writes `dataset_boxer_can/` (including the `invalid_R_int`/`R_int_current_sensor_dropout`/`R_int_negative_current` flag columns via `add_r_int_validity_flags()`); `--extract-outlier-traces` additionally writes the raw-trace drill-down files |
 | `exports/boxer_can_summary_export/` | R_int reliability diagnostic writeup + `summary_stats.csv`/`invalid_R_int_by_tapper.csv` for the CAN dataset — companion to `exports/RESULTS_SUMMARY_FOR_PAPER.md` §1 |
 | `pi_daily_report.py` | Daily Pi watchdog: sync logs over SSH + Gmail status mail (scheduled task `PiDailyReport`, see section below) |
-| `lab_field_feature_comparison.py` | Lab-vs-field feature-family comparison logic for BOTH lab batteries (shared by `boxer_can_dashboard.py`'s tab, `main_dashboard.py`'s top-level section, and runnable standalone) |
+| `lab_field_feature_comparison.py` | Lab-vs-field feature-family comparison logic for `ul18_12_unit2` vs. the field (shared by `boxer_can_dashboard.py`'s tab, `main_dashboard.py`'s top-level section, and runnable standalone) |
 | `dataset_boxer_can/` | Git-tracked small per-start tables for all 15 taps + `outlier_raw_traces.csv`/`outlier_raw_events.csv` |
 | `dataset_boxer/start_data_battery/my_start_csv/` | The original 41-start-only dataset used by the separate, older `boxer_battery_dashboard.py` (kept intentionally — see that file's own docstring) |
 
@@ -900,7 +898,8 @@ of new/grown files from `/media/pi/LOGBATTEST/<BATTERY_ID>/` into
 newest log age, service state, journal HALTED/UNPLANNED GAP/Traceback,
 `_events.csv`, SOH jumps and charge timeouts in `_block_summary.csv`, sweep
 target-vs-Coulomb SoC in `_sweep_points.csv`, USB free space, dashboard RSS)
-→ Gmail mail to `MAIL_TO` (Gmail + UT address), subject `OK` / `ACTIE NODIG`.
+→ Gmail mail to the addresses in `pi_daily_report_config.json` (gitignored; copy
+`pi_daily_report_config.example.json`, a missing file ends up in the errors log below), subject `OK` / `ACTIE NODIG`.
 
 - Gmail app password lives only in Windows Credential Manager, generic
   target `pi_daily_report` (`cmdkey /generic:pi_daily_report /user:<gmail> /pass`).

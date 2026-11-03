@@ -11,7 +11,7 @@ Each panel below is one (condition, battery) pair — e.g. lab cold-crank, lab h
 nothing is ever pooled into a single misleading box. Axes are capped to a robust (outlier-resistant)
 range — a subtitle under each panel reports how many points were clipped from view and the most
 extreme value among them; the table at the bottom always reports true, uncapped min/mean/max. The
-field's crank-R_int panel additionally excludes ~4.8% of starts flagged unreliable by a
+field's crank-R_int panel additionally excludes ~6.4% of starts flagged unreliable by a
 current-based diagnostic (a sign-flip cluster on one CAN tap, plus scattered near-zero-current
 starts on most others) — see `lab_field_feature_comparison.py`'s module docstring for the full
 investigation.
