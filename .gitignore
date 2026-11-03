@@ -15,6 +15,10 @@ analytics/exports/*
 !analytics/exports/*_summary_export/**
 !analytics/exports/RESULTS_SUMMARY_FOR_PAPER.md
 
+# Disk cache for testday_v2_features.py's memoized per-file loads (joblib) —
+# rebuilds automatically, keyed on file mtime/size, not meant to be shared
+analytics/.v2_feature_cache/
+
 # Python
 __pycache__/
 *.pyc

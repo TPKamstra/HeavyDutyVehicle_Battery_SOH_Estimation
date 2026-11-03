@@ -8,12 +8,13 @@ Run the dashboard:
 panel serve battery_feature_dashboard.py --show
 ```
 
-**Two batteries, two separate dashboards — never pooled:**
+**One dashboard per battery — never pooled:**
 
 | Battery | Dashboard | Log folder |
 |---|---|---|
 | `old_ul18_12` (heavily degraded, ~8 Ah of 18 Ah nameplate, retired) | `battery_feature_dashboard.py` | `LOGBATTEST_Complete/` |
 | `ul18_12_unit2` (fresh, started 2026-07-03, testing in progress) | `battery_feature_dashboard_unit2.py` | `ul18_12_unit2/` |
+| `ul18_12_unit3` (test plan v3, started 2026-10-30, testing in progress) | `battery_feature_dashboard_unit3.py` | `LOGBATTEST/ul18_12_unit3/` |
 
 ```
 panel serve battery_feature_dashboard_unit2.py --show
@@ -41,6 +42,7 @@ dashboard, pick a free port outside this list.
 | 5008 | `battery_feature_dashboard_unit2.py` | lab, `ul18_12_unit2` | needs `ul18_12_unit2/` log folder — see below |
 | 5009 | `boxer_can_dashboard.py` | field, 15 CAN taps / 4799 starts | `analytics/` (git-tracked data) |
 | 5010 | `main_dashboard.py` (unified, all four above composed into one app) | all of the above | needs the lab log folders too — see below |
+| 5011 | `battery_feature_dashboard_unit3.py` | lab, `ul18_12_unit3` | needs `LOGBATTEST/ul18_12_unit3/`, filled by `pi_daily_report.py` |
 
 ```
 panel serve battery_feature_dashboard.py --show          # port 5006
@@ -48,6 +50,7 @@ panel serve boxer_battery_dashboard.py --show             # port 5007
 panel serve battery_feature_dashboard_unit2.py --show     # port 5008
 panel serve boxer_can_dashboard.py --show                 # port 5009
 panel serve main_dashboard.py --show                      # port 5010
+panel serve battery_feature_dashboard_unit3.py --show     # port 5011
 ```
 
 **`main_dashboard.py` can only run somewhere both the lab raw logs AND the
@@ -720,3 +723,47 @@ target-vs-Coulomb SoC in `_sweep_points.csv`, USB free space, dashboard RSS)
 - Last report is also written to `BatPi_Download\LOGBATTEST\_daily_report_<id>.html`.
 - **Update `BATTERY_ID` at the top of the script when the Pi switches battery.**
 - Manual: `python pi_daily_report.py --no-mail` (sync + print), add `--no-sync` to skip copying.
+
+## `ul18_12_unit3` dashboard (`battery_feature_dashboard_unit3.py`) — added 2026-11-03
+
+Port 5011, also the "Lab — unit3" tab of `main_dashboard.py`. Data:
+`BatPi_Download/LOGBATTEST/ul18_12_unit3/`, filled by `pi_daily_report.py`, so
+click **Rescan** after a sync. Started as a copy of the unit2 script; never pool
+the two. Tabs added: Campaign, Sweep Quality, Setpoint Check.
+
+Differences from unit2 that matter when reading its numbers:
+
+- **SoC** comes from `_sweep_points.csv` (`soc_cc_pct`), not from an OCV table.
+  `soc_log_pct` re-derives it from the logs. Use a C/5 from the same counter as
+  the Ah: mixing log Ah with the Pi's C/5 shows a false drift (8.8 % instead of
+  10.0 % at the last point of Block 1).
+- **C/5**: the Pi reads a steady ~0.2 Ah below the log integration (15.247 vs
+  15.452 Ah in Block 1). Cause not established. The Pi's value decides the 50 %
+  stop, so it's primary. Each percentage uses its own Block 1.
+- **Setpoint Check**: each run is compared with the profile it replayed, matched
+  on `Profile_Hash` (`PROFILE_FILES`, hashed for both LF and CRLF because git may
+  rewrite line endings). **Add any new profile to `PROFILE_FILES`**, or its runs
+  count as unknown and all their discharge features are blanked.
+- **Frozen sink current (root cause found 2026-11-02).** The sink follows only
+  `SOUR:CURR:NEG`; a negative `SOUR:CURR` is refused. Up to 2026-06-30 the replay
+  set that limit per step at 1.2 x setpoint, so `old_ul18_12` runs carried exactly
+  1.2 x the profile. From profile v2 (2026-07-02) until the Pi fix it was set once,
+  and current stayed at the previous limit: **every `ul18_12_unit2` run and unit3
+  Block 1**. Discharge-event features of those runs are not what their names say,
+  which includes unit2's `driving_aux_load_1_V_std` result and the crank caveat
+  above. unit3 keeps them, blanked unless "Also show" is ticked.
+- `_FEATURE_EVENT_PREFIXES` maps features to the events they rest on. Add new
+  feature families there, or they won't be blanked when an event fails.
+- **Crank currents**: the BDPS accepts `SOUR:CURR:NEG` -60 but refuses -75 and -90 (`-222 Data out
+  of range`; exact limit unknown), so the profile is capped at -60 A
+  (`test_day_profile_v2_cap60A.csv`). The hot crank reaches about -35.6 A, not -55,
+  because the output is off before it and current needs ~0.1 s to rise. `status`
+  stays `ok` since the check uses medians: compare `sp_peak_A`/`meas_peak_A`.
+- `crank_*_R_int_apparent_mohm` divides by I_peak, but the cold crank starts from
+  the -8 A glow load, so it reads low (24.7 vs 28.5 mΩ). `crank_*_R_int_deltaI_mohm`
+  divides by the actual step; compare cold and hot with that one.
+- `voltage_limited` means the 10.2 V sink floor limited the current, as at 10 % SoC.
+  Those runs keep their features. Transient V_min falls below the floor from about
+  40 % SoC (9.24 V at 10 %, Block 2).
+- Local copies under provisional names (`Block_01_SoC060_stepdown_*`) are ignored:
+  the Pi renames them once the OCV is known, and the sync never deletes.

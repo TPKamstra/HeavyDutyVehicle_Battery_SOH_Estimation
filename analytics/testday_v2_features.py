@@ -30,10 +30,98 @@ automatically (it prefers the logged column over the filename-parsed id).
 """
 
 import os
+import pickle
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import pandas as pd
+
+# ── Disk cache for the expensive per-file work below ─────────────────────────
+# CSV read + sensor merge_asof in load_run(), CSV read + capacity calc in
+# find_block_soh(), and battery_feature_dashboard_unit2.py's own _cycle_ah --
+# all keyed on (path, mtime, size) via _fingerprint(), so a file that changes
+# (e.g. the "live-updating SOH C5 file" case in CLAUDE.md, or a retried/
+# re-run cycle) is reprocessed, but an unchanged file across dashboard
+# restarts/Rescans is served from cache.
+#
+# A first pass used joblib.Memory (one cache subdirectory + several small
+# files per call) but measured ~25-30ms/call even on a full cache *hit* for
+# this dataset's ~550 per-file calls -- dominated by per-call filesystem
+# round-trips on this machine, not actual (de)serialization cost (most
+# cached values are tiny tuples). This instead keeps ONE dict, loaded from a
+# single pickle file once per process and read from memory after that -- a
+# cache hit is a dict lookup, not a filesystem round-trip.
+_CACHE_DIR = os.path.join(os.path.dirname(__file__), ".v2_feature_cache")
+_CACHE_PATH = os.path.join(_CACHE_DIR, "cache.pkl")
+_cache_lock = threading.Lock()
+_cache_dict: dict | None = None
+
+
+def _fingerprint(path: str | None) -> tuple | None:
+    if path is None or not os.path.exists(path):
+        return None
+    st = os.stat(path)
+    return (st.st_mtime_ns, st.st_size)
+
+
+def _get_cache_dict() -> dict:
+    global _cache_dict
+    if _cache_dict is None:
+        with _cache_lock:
+            if _cache_dict is None:  # re-check inside the lock
+                try:
+                    with open(_CACHE_PATH, "rb") as f:
+                        _cache_dict = pickle.load(f)
+                except (FileNotFoundError, EOFError, pickle.PickleError):
+                    _cache_dict = {}
+    return _cache_dict
+
+
+def flush_cache() -> None:
+    """Persist any new cache entries to disk. Called once after each batch
+    of cached_call()s (build_dataset()/find_degr_cycles()/find_block_soh())
+    rather than after every individual call, so a big scan costs one write,
+    not hundreds."""
+    cache = _get_cache_dict()
+    os.makedirs(_CACHE_DIR, exist_ok=True)
+    tmp_path = _CACHE_PATH + f".tmp{os.getpid()}"
+    with _cache_lock:
+        with open(tmp_path, "wb") as f:
+            pickle.dump(cache, f, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp_path, _CACHE_PATH)
+
+
+def cached_call(tag: str, key: tuple, compute_fn):
+    """compute_fn() is only ever invoked once per unique (tag, *key); every
+    later call with the same key returns the stored result. `key` should
+    include each input file's _fingerprint() so a changed file gets a fresh
+    key (and is recomputed) rather than serving a stale cached value."""
+    cache = _get_cache_dict()
+    full_key = (tag,) + key
+    with _cache_lock:
+        if full_key in cache:
+            return cache[full_key]
+    result = compute_fn()
+    with _cache_lock:
+        cache[full_key] = result
+    return result
+
+
+def parallel_map(fn, items: list, max_workers: int = 8) -> list:
+    """Plain ThreadPoolExecutor .map(), collected eagerly. I/O-bound work
+    (CSV parsing releases the GIL) benefits from real parallelism here; safe
+    to call with any mix of cache hits/misses since cached_call() above
+    guards its shared dict with a lock."""
+    items = list(items)
+    if not items:
+        return []
+    if len(items) == 1:
+        return [fn(items[0])]
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        return list(ex.map(fn, items))
+
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 # Battery_ID is intentionally NOT required: as of 2026-07-02 logged runs already
@@ -71,6 +159,9 @@ _TIMESTAMP_RE = r"\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}"
 _V2_TESTDAY_PAT = re.compile(
     r"^(?:(?P<battery_id>.+)_)?"
     r"(?:SoCsweep|Block_(?P<block>\d+))_"
+    # Ah-based sweep (ul18_12_unit3 onward) adds the target SoC before the OCV
+    # measured after that run's rest, e.g. Block_02_SoC070_OCV12p80V_testday_...
+    r"(?:SoC(?P<soc>\d+)_)?"
     r"OCV(?P<ocv>\d+p\d+)V_testday_(?P<log>bdps|sensor)_"
     r"(?P<ts>" + _TIMESTAMP_RE + r")\.csv$"
 )
@@ -129,10 +220,12 @@ def find_v2_testday_runs(log_dir: str) -> list:
         battery_id = gd.get("battery_id") or "unknown"
         block = int(gd["block"]) if gd.get("block") else None
         ocv_label = _ocv_label_to_volts(gd["ocv"]) if gd.get("ocv") else None
+        target_soc = int(gd["soc"]) if gd.get("soc") else None
         run = {
             "battery_id": battery_id,
             "block": block,
             "ocv_label": ocv_label,
+            "target_soc": target_soc,
             "kind": kind,
             "ts": gd["ts"],
             "bdps_path": os.path.join(log_dir, fn),
@@ -142,7 +235,9 @@ def find_v2_testday_runs(log_dir: str) -> list:
         key = (
             ("profile_single", battery_id, gd["ts"])
             if kind == "profile_single"
-            else (kind, battery_id, block, ocv_label)
+            # A re-run of an Ah-based sweep point lands on a slightly different
+            # OCV, so the target SoC (when present) is the point's identity.
+            else (kind, battery_id, block, ("soc", target_soc) if target_soc is not None else ocv_label)
         )
         existing = runs_by_key.get(key)
         if existing is None or run["ts"] > existing["ts"]:
@@ -151,6 +246,16 @@ def find_v2_testday_runs(log_dir: str) -> list:
 
 
 # ── Data loading ───────────────────────────────────────────────────────────────
+# load_run() itself is intentionally NOT cached: it returns the full raw
+# per-run DataFrame (bdps rows merge_asof'd against the sensor log), and
+# caching that wholesale for every one of the ~150 test-day runs bloated the
+# single cache file to 500+ MB, making the "cache hit" path slower to load
+# than reading the CSVs fresh -- worse than no caching. It's called two
+# ways: (1) interactively, one run at a time, from the Run Inspector/Compare
+# Runs tabs -- a single CSV read/merge is already fast, no caching needed;
+# (2) in bulk from build_dataset(), which only ever needs this run's
+# *extracted features* (a small dict), not the raw frame -- so build_dataset
+# caches at that smaller granularity instead (see _dataset_row() below).
 
 def load_run(bdps_path: str, sensor_path: str | None = None) -> pd.DataFrame | None:
     """
@@ -444,22 +549,40 @@ def find_block_soh(log_dir: str) -> dict:
     block_c5_capacity_ah off the per-run dataset, which only carries a
     value for blocks that already have at least one test-day run.
     """
-    out = {}
+    candidates = []
     for fn in os.listdir(log_dir):
         m = _V2_SOH_C5_PAT.match(fn)
         if not m:
             continue
-        block = int(m.group("block"))
+        path = os.path.join(log_dir, fn)
+        candidates.append((path, int(m.group("block")), m.group("battery_id") or "unknown"))
+
+    def _block_soh_row_impl(path: str, fallback_bid: str):
         try:
-            df = pd.read_csv(os.path.join(log_dir, fn))
+            df = pd.read_csv(path)
         except Exception:
-            continue
-        bid = m.group("battery_id") or "unknown"
+            return None
+        bid = fallback_bid
         if "Battery_ID" in df.columns and pd.notna(df["Battery_ID"].iloc[0]):
             bid = str(df["Battery_ID"].iloc[0])
         ah, reached_cutoff = _block_c5_capacity_ah(df)
-        if ah is not None:
-            out[(bid, block)] = (ah, reached_cutoff)
+        if ah is None:
+            return None
+        return bid, ah, reached_cutoff
+
+    def _load(item):
+        path, block, fallback_bid = item
+        fp = _fingerprint(path)
+        result = cached_call("block_soh_row", (path, fp, fallback_bid), lambda: _block_soh_row_impl(path, fallback_bid))
+        return block, result
+
+    out = {}
+    for block, result in parallel_map(_load, candidates):
+        if result is None:
+            continue
+        bid, ah, reached_cutoff = result
+        out[(bid, block)] = (ah, reached_cutoff)
+    flush_cache()
     return out
 
 
@@ -478,6 +601,34 @@ def find_block_soh_df(log_dir: str, battery_id: str | None = None) -> pd.DataFra
 
 # ── Dataset assembly ────────────────────────────────────────────────────────────
 
+def _dataset_row_impl(bdps_path: str, sensor_path: str | None):
+    """Loads + feature-extracts one run for build_dataset(). Returns "legacy"
+    (pre-v2 schema), "corrupt" (Profile_Hash not constant within the run),
+    or a small dict (battery_id override + timestamp + extracted features) —
+    deliberately not the raw DataFrame itself, so caching this result stays
+    cheap (see the note above load_run())."""
+    df = load_run(bdps_path, sensor_path)
+    if df is None:
+        return "legacy"
+    if df["Profile_Hash"].nunique() > 1:
+        return "corrupt"
+    row_battery_id = None
+    if "Battery_ID" in df.columns and pd.notna(df["Battery_ID"].iloc[0]):
+        row_battery_id = str(df["Battery_ID"].iloc[0])
+    result = {"battery_id_override": row_battery_id, "timestamp": df["Timestamp"].iloc[0]}
+    result.update(extract_features(df))
+    return result
+
+
+def _dataset_row(bdps_path: str, sensor_path: str | None):
+    bdps_fp = _fingerprint(bdps_path)
+    sensor_fp = _fingerprint(sensor_path) if sensor_path else None
+    return cached_call(
+        "dataset_row", (bdps_path, sensor_path, bdps_fp, sensor_fp),
+        lambda: _dataset_row_impl(bdps_path, sensor_path),
+    )
+
+
 def build_dataset(log_root: str, battery_id: str | None = None) -> pd.DataFrame:
     """
     Glob v2 test-day profile bdps logs under log_root, parse the OCV label +
@@ -491,21 +642,24 @@ def build_dataset(log_root: str, battery_id: str | None = None) -> pd.DataFrame:
     n_skipped_legacy = 0
     n_skipped_corrupt = 0
 
-    for info in find_v2_testday_runs(log_root):
-        df = load_run(info["bdps_path"], info["sensor_path"])
-        if df is None:
+    infos = find_v2_testday_runs(log_root)
+    # I/O-bound (CSV parse + disk read, first-run cache miss) -- threads give
+    # a real speedup here since pandas' C parser releases the GIL.
+    results = parallel_map(lambda i: _dataset_row(i["bdps_path"], i["sensor_path"]), infos)
+    flush_cache()
+
+    for info, result in zip(infos, results):
+        if result == "legacy":
             n_skipped_legacy += 1
             continue
-        if df["Profile_Hash"].nunique() > 1:
+        if result == "corrupt":
             n_skipped_corrupt += 1
             continue
 
         # Prefer an actual Battery_ID column value once backend.py adds one;
         # fall back to the filename-parsed id (currently always "unknown",
         # since no run on disk carries this column yet).
-        row_battery_id = info["battery_id"]
-        if "Battery_ID" in df.columns and pd.notna(df["Battery_ID"].iloc[0]):
-            row_battery_id = str(df["Battery_ID"].iloc[0])
+        row_battery_id = result["battery_id_override"] or info["battery_id"]
         if battery_id and row_battery_id != battery_id:
             continue
 
@@ -514,10 +668,10 @@ def build_dataset(log_root: str, battery_id: str | None = None) -> pd.DataFrame:
             "block": info["block"],
             "ocv_label_V": info["ocv_label"],
             "kind": info["kind"],
-            "timestamp": df["Timestamp"].iloc[0],
+            "timestamp": result["timestamp"],
             "filename": info["filename"],
         }
-        row.update(extract_features(df))
+        row.update({k: v for k, v in result.items() if k not in ("battery_id_override", "timestamp")})
         rows.append(row)
 
     if not rows:
