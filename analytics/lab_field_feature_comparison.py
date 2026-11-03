@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """
 Lab vs Field Feature-Family Consistency Check
-Two lab batteries -- Ultracell UL18-12 `old_ul18_12` (12 V, already-aged,
-partial v2-schema rollout, 8 runs) and `ul18_12_unit2` (12 V, full 20-block
+Lab battery -- Ultracell UL18-12 `ul18_12_unit2` (12 V, full 20-block
 campaign, 140 runs) -- vs. EnerSys ArmaSafe Plus 12FV120 (field, "Boxer"
 fleet CAN export, 15 taps, 4799 starts).
+
+(The other lab battery, `old_ul18_12` -- already-aged, only 8 runs on a
+partial v2-schema rollout -- was dropped from this comparison on 2026-08-26:
+8 runs is too thin a sample to read anything into next to unit2's 140 and
+field's 4799, and having it in every panel was adding a confusing third
+series without adding real information. It still has its own full dashboard,
+`battery_feature_dashboard.py` / the "Lab -- old_ul18_12" tab in
+main_dashboard.py -- this removal is scoped to the lab-vs-field comparison
+only.)
 
 This is a *feature-family consistency check*, not a value-for-value
 validation: lab and field are different products (different chemistry
@@ -15,10 +23,7 @@ shared ground-truth SOH to validate against -- see main.tex's
 same way. The point is to check whether a feature that behaves a given way
 in the lab (e.g. rises with degradation, is SoC-robust) behaves in a
 qualitatively similar way in the field, not that the two sides should land
-on the same absolute numbers. `old_ul18_12` is a much smaller sample (8
-runs, partial event-schema rollout -- see analytics/CLAUDE.md) than `unit2`
-(140 runs) -- treat its panels as a coarse consistency spot-check, not
-equally statistically weighted against unit2's.
+on the same absolute numbers.
 
 Three feature families have a genuine counterpart on both sides:
   (a) crank apparent internal resistance (mOhm)
@@ -90,10 +95,6 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-OLD_LAB_CSV = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "exports", "old_ul18_12_summary_export", "testday_v2_beta_partial.csv",
-)
 LAB_CSV = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "exports", "ul18_12_unit2_summary_export", "testday_features.csv",
@@ -108,13 +109,16 @@ FIELD_PACKS_CSV = os.path.join(
 # Validated categorical pair (blue/orange, adjacent slots 1-2 -- see dataviz
 # skill's references/palette.md) -- blue = lab identity, orange = field
 # identity, held fixed across every panel. A second dimension within "lab"
-# (cold/hot condition, OR -- for the single-condition V_std family -- which
-# lab battery) is a shade of the SAME hue rather than a new hue, since it's
-# a sub-condition of one identity, not a new series; battery identity is
-# always carried in the panel's text label, never invented as a third color.
-LAB_SHADE_1 = "#6da7ec"   # lab, condition/battery 1 (e.g. cold, or old_ul18_12) -- blue, light step
-LAB_SHADE_2 = "#1c5cab"   # lab, condition/battery 2 (e.g. hot, or unit2)        -- blue, dark step
-LAB_BASE = "#2a78d6"      # unused now that V_std also splits by battery; kept for API stability
+# (cold/hot condition) is a shade of the SAME hue rather than a new hue,
+# since it's a sub-condition of one identity, not a new series; battery
+# identity is always carried in the panel's text label, never invented as a
+# third color. Since 2026-08-26 there is only one lab battery in this
+# comparison (old_ul18_12 dropped, see module docstring), so LAB_BASE (not a
+# shade) is used for the single-condition V_std family's one remaining lab
+# series -- LAB_SHADE_1/2 are still used for cold/hot within families (a)/(b).
+LAB_SHADE_1 = "#6da7ec"   # lab, cold-crank condition -- blue, light step
+LAB_SHADE_2 = "#1c5cab"   # lab, hot-crank condition  -- blue, dark step
+LAB_BASE = "#2a78d6"      # lab, single-condition families (e.g. V_std)
 FIELD_SHADE_1 = "#eb6834"  # field, condition 1 (e.g. +30s) -- orange
 FIELD_SHADE_2 = "#d95926"  # field, condition 2 (e.g. +60s) -- orange, dark step
 FIELD_BASE = "#eb6834"
@@ -144,11 +148,10 @@ AXIS_PAD_FRAC = 0.08
 # ── Data loading ──────────────────────────────────────────────────────────────
 
 def load_data():
-    lab_old = pd.read_csv(OLD_LAB_CSV)
     lab_unit2 = pd.read_csv(LAB_CSV)
     field = pd.read_csv(FIELD_ENRICHED_CSV, parse_dates=["start_time"])
     field_pk = pd.read_csv(FIELD_PACKS_CSV, parse_dates=["start_time"])
-    return lab_old, lab_unit2, field, field_pk
+    return lab_unit2, field, field_pk
 
 
 # ── Robust axis range (outlier-aware, never data-dropping) ─────────────────
@@ -185,7 +188,7 @@ def robust_axis_range(values: np.ndarray, k: float = K_EXTREME_IQR, pad_frac: fl
 
 # ── Matched-feature families ────────────────────────────────────────────────
 
-def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: pd.DataFrame, field_pk: pd.DataFrame) -> list:
+def build_matched_series(lab_unit2: pd.DataFrame, field: pd.DataFrame, field_pk: pd.DataFrame) -> list:
     """
     Return a list of family dicts, each:
       {key, title, ylabel, shared_axis, caveat, series: [{label, values, color}, ...]}
@@ -195,12 +198,11 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
     (used only for R_int, where lab and field are not on comparable scales
     -- see module docstring).
 
-    Both lab batteries (`lab_old` = old_ul18_12, `lab_unit2` = ul18_12_unit2)
-    are included as separate, labeled series in every family -- never pooled
-    together, for the same reason lab cold/hot are never pooled (see module
-    docstring): old_ul18_12's 8-run partial-schema sample and unit2's
-    140-run full campaign are not statistically comparable populations, and
-    presenting them as one merged "lab" series would hide that.
+    Lab cold/hot crank conditions are kept as separate, labeled series within
+    families (a)/(b) rather than pooled -- they're genuinely different
+    operating points, not noise around one value. (`old_ul18_12` used to
+    appear here too, as a second lab battery; dropped 2026-08-26, see module
+    docstring -- 8 runs wasn't a usable sample next to unit2's 140.)
     """
     families = []
 
@@ -212,8 +214,8 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
     field_r_int = field["R_internal_est_ohm_pack"] * 1000
     field_r_int_flag = field["invalid_R_int"] if "invalid_R_int" in field.columns else pd.Series(False, index=field.index)
 
-    # (a) Crank apparent internal resistance -- one panel per (battery,
-    # condition) pair plus field, never pooled -- see module docstring caveat.
+    # (a) Crank apparent internal resistance -- one panel per (cold, hot,
+    # field) condition, never pooled -- see module docstring caveat.
     families.append({
         "key": "R_int_apparent_mohm",
         "title": "Crank Apparent Internal Resistance",
@@ -227,8 +229,6 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
             "subset only; see docstring."
         ),
         "series": [
-            {"label": "Lab old_ul18_12 — cold", "values": lab_old["crank_cold_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_1},
-            {"label": "Lab old_ul18_12 — hot", "values": lab_old["crank_hot_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_2},
             {"label": "Lab unit2 — cold", "values": lab_unit2["crank_cold_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_1},
             {"label": "Lab unit2 — hot", "values": lab_unit2["crank_hot_R_int_apparent_mohm"].dropna(), "color": LAB_SHADE_2},
             {
@@ -247,8 +247,6 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
         "shared_axis": True,
         "caveat": None,
         "series": [
-            {"label": "Lab old_ul18_12 — cold, +30s", "values": lab_old["recovery_after_cold_V_plus30s"].dropna(), "color": LAB_SHADE_1},
-            {"label": "Lab old_ul18_12 — hot, +30s", "values": lab_old["recovery_after_hot_V_plus30s"].dropna(), "color": LAB_SHADE_2},
             {"label": "Lab unit2 — cold, +30s", "values": lab_unit2["recovery_after_cold_V_plus30s"].dropna(), "color": LAB_SHADE_1},
             {"label": "Lab unit2 — hot, +30s", "values": lab_unit2["recovery_after_hot_V_plus30s"].dropna(), "color": LAB_SHADE_2},
             {"label": "Field — +30s (per group)", "values": (field_pk["V_rec_30s_1_10V"] / 10).dropna(), "color": FIELD_SHADE_1},
@@ -256,9 +254,9 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
         ],
     })
 
-    # (c) Post-crank / driving voltage stability -- no cold/hot axis here, so
-    # the two shades distinguish lab battery identity instead (see module
-    # docstring's color-convention note).
+    # (c) Post-crank / driving voltage stability -- single lab condition, so
+    # LAB_BASE rather than a shade (no second lab series to distinguish it from
+    # anymore, see module docstring's color-convention note).
     families.append({
         "key": "V_std_stability",
         "title": "Post-Crank / Driving Voltage Stability",
@@ -266,8 +264,7 @@ def build_matched_series(lab_old: pd.DataFrame, lab_unit2: pd.DataFrame, field: 
         "shared_axis": True,
         "caveat": None,
         "series": [
-            {"label": "Lab old_ul18_12 — driving_aux_load", "values": lab_old["driving_aux_load_1_V_std"].dropna(), "color": LAB_SHADE_1},
-            {"label": "Lab unit2 — driving_aux_load", "values": lab_unit2["driving_aux_load_1_V_std"].dropna(), "color": LAB_SHADE_2},
+            {"label": "Lab unit2 — driving_aux_load", "values": lab_unit2["driving_aux_load_1_V_std"].dropna(), "color": LAB_BASE},
             {"label": "Field — post-start (15-115s)", "values": (field["post_start_V_std_1_10V"] / 10).dropna(), "color": FIELD_BASE},
         ],
     })
@@ -383,8 +380,8 @@ def build_family_figure(fam: dict) -> go.Figure:
 # ── Standalone run ───────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    lab_old_df, lab_unit2_df, field_df, field_pk_df = load_data()
-    families = build_matched_series(lab_old_df, lab_unit2_df, field_df, field_pk_df)
+    lab_unit2_df, field_df, field_pk_df = load_data()
+    families = build_matched_series(lab_unit2_df, field_df, field_pk_df)
     summary = summary_table(families)
     pd.set_option("display.float_format", lambda x: f"{x:.3f}")
     print(summary.to_string(index=False))

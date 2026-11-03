@@ -37,7 +37,17 @@ pn.extension("plotly", "tabulator")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BASE_DIR       = os.path.dirname(__file__)
-LOG_DIR        = os.path.join(BASE_DIR, "ul18_12_unit2")
+# The raw test-day logs (ul18_12_unit2/, gitignored, ~1.2 GB) live in a
+# separate working copy from this script -- see analytics/CLAUDE.md's
+# "BATPI_DATA_DIR" section. BATPI_DATA_DIR overrides where LOG_DIR is
+# resolved (for portability to another machine); if unset, falls back to
+# _KNOWN_DATA_DIR below rather than BASE_DIR (same folder as this script) --
+# see battery_feature_dashboard.py's identical config block for why (same
+# machine-specific-constant pattern export_ul18_12_unit2_summary.py's
+# DATA_REPO_PATH already uses for this identical problem).
+_KNOWN_DATA_DIR = r"C:\Users\TPKam\Documents\BatPi_Download"
+DATA_DIR       = os.environ.get("BATPI_DATA_DIR") or _KNOWN_DATA_DIR
+LOG_DIR        = os.path.join(DATA_DIR, "ul18_12_unit2")
 BATTERY_ID     = "ul18_12_unit2"
 NOMINAL_AH     = 18.0     # Ultracell UL18-12 nameplate C/20 capacity
 MIN_DEGR_BYTES = 5_000    # Degr charge/discharge files smaller than this are fragments/aborted
@@ -63,11 +73,69 @@ _STATUS_SERIOUS  = "#ec835a"
 _STATUS_CRITICAL = "#d03b3b"
 _DIVERGING_LO, _DIVERGING_MID, _DIVERGING_HI = "#2a78d6", "#f0efec", "#e34948"
 _DIVERGING_SCALE = [[0.0, _DIVERGING_LO], [0.5, _DIVERGING_MID], [1.0, _DIVERGING_HI]]
-# Sequential = one hue, light -> dark (same blue as categorical slot 1)
+# Sequential = one hue, light -> dark (same blue as categorical slot 1).
+# For genuinely continuous magnitude (a heatmap-style "near zero recedes to
+# the surface" quantity) the full range is correct as-is.
 _SEQUENTIAL_BLUE = [
     [0.0, "#cde2fb"], [0.25, "#86b6ef"], [0.5, "#3987e5"],
     [0.75, "#1c5cab"], [1.0, "#0d366b"],
 ]
+# Ordinal ramp for a *discrete ordered* quantity like block/cycle number,
+# used by the Pairwise scatter explorer's "colour by". Orange, not blue --
+# the house palette's own rule for a second simultaneous one-hue ramp is
+# "the next categorical slot's hue" (color-formula.md), i.e. categorical
+# slot 2 (#eb6834). Blue stayed reserved for the *continuous* colorbar case
+# below (build_scatter_pair()'s non-ordinal branch), so the two never
+# collide -- but this also gives "colour by block" real hue contrast
+# against blue-heavy UI chrome, which is what made the all-blue version
+# still hard to read even after fixing its contrast floor.
+#
+# Derived (no orange ordinal ramp is in palette.md to pull from) by cloning
+# the *documented* blue ramp's own HSL lightness trajectory (0.894 -> 0.235)
+# onto orange's hue/saturation (H=17.0deg, S=0.821, from the categorical
+# anchor #eb6834), then re-picking the floor step by the same rule used for
+# blue: first step whose WCAG contrast against the light surface (#fcfcfb)
+# clears 2:1. That lands one step later than blue's (index 4, not 3) --
+# orange needs to go slightly darker before it clears the floor -- at
+# contrast 2.31 (comfortably past the 2.0 minimum, same margin as blue's
+# 2.06). Steps below verified strictly monotonic in lightness and contrast.
+_ORDINAL_STEPS = [
+    "#f08f69", "#ee7c4f", "#eb6733", "#e85318", "#d04a14",
+    "#b54012", "#9d3810", "#842f0d", "#6d270b",
+]
+# Above this many distinct values, a discrete per-value legend stops being
+# legible -- fall back to the continuous sequential colorbar instead.
+_MAX_ORDINAL_VALUES = 24
+
+
+def _hex_to_rgb(h: str) -> tuple:
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _rgb_to_hex(rgb: tuple) -> str:
+    return "#%02x%02x%02x" % tuple(max(0, min(255, round(c))) for c in rgb)
+
+
+def _ordinal_ramp(n: int) -> list:
+    """n evenly-spaced, monotonically-darkening colors interpolated along
+    _ORDINAL_STEPS. Snapping straight to the 9 *named* steps ties adjacent
+    values together once n > 9 (block 20 needs its own shade too, not just
+    block 1-9 repeated) -- interpolating keeps every value strictly darker
+    than the last, for any n up to _MAX_ORDINAL_VALUES."""
+    if n <= 1:
+        return [_ORDINAL_STEPS[-1]]
+    anchors = [_hex_to_rgb(c) for c in _ORDINAL_STEPS]
+    m = len(anchors) - 1
+    out = []
+    for i in range(n):
+        t = i / (n - 1) * m
+        lo = int(t)
+        hi = min(lo + 1, m)
+        frac = t - lo
+        rgb = tuple(anchors[lo][k] + (anchors[hi][k] - anchors[lo][k]) * frac for k in range(3))
+        out.append(_rgb_to_hex(rgb))
+    return out
 _EVENT_COLORS = {
     "rest_baseline":       "#e0e0e0",
     "ocv_window":          "#c7c7c7",
@@ -118,8 +186,16 @@ def _cycle_ah(path: str, sign: str) -> tuple:
     file has no reliable correction, so it's just flagged unreliable rather
     than "fixed" with a number that can't be trusted.
 
-    Returns (ah, n_rows, size_bytes, complete, coarse_sampling).
+    Returns (ah, n_rows, size_bytes, complete, coarse_sampling). Disk-cached
+    (keyed on path + mtime + size, via testday_v2_features.py's shared
+    cached_call/_fingerprint) since this file set (402+ files across 20
+    blocks) doesn't change once written, bar the rare retried/re-run cycle.
     """
+    fp = v2feat._fingerprint(path)
+    return v2feat.cached_call("cycle_ah", (path, sign, fp), lambda: _cycle_ah_impl(path, sign))
+
+
+def _cycle_ah_impl(path: str, sign: str) -> tuple:
     size = os.path.getsize(path)
     df = pd.read_csv(path)
     n = len(df)
@@ -174,8 +250,8 @@ def find_degr_cycles(log_dir: str) -> pd.DataFrame:
             ts_seen[key] = ts
             entries.setdefault((block, cycle), {})[kind] = os.path.join(log_dir, fn)
 
-    rows = []
-    for (block, cycle), kinds in sorted(entries.items()):
+    def _build_row(item):
+        (block, cycle), kinds = item
         row = {"block": block, "cycle": cycle}
         for kind in ("discharge", "charge"):
             if kind in kinds:
@@ -187,7 +263,13 @@ def find_degr_cycles(log_dir: str) -> pd.DataFrame:
                 row[f"{kind}_ah"] = None
                 row[f"{kind}_complete"] = False
                 row[f"{kind}_coarse_sampling"] = False
-        rows.append(row)
+        return row
+
+    # I/O-bound (CSV parse per file, first-run cache miss on ~400 Degr
+    # files) -- threads give a real speedup since pandas' C parser releases
+    # the GIL.
+    rows = v2feat.parallel_map(_build_row, sorted(entries.items()))
+    v2feat.flush_cache()
 
     df = pd.DataFrame(rows)
     if df.empty:
@@ -431,24 +513,65 @@ def build_scatter_pair(df: pd.DataFrame, x_col: str, y_col: str, color_col: str 
         "Block %{customdata[1]}  ·  OCV %{customdata[2]} V  ·  SoC ≈ %{customdata[3]}%<br>"
     )
 
+    data_traces = []
+    discrete_legend = False
     if color_col in sub.columns:
-        marker = dict(
-            color=pd.to_numeric(sub[color_col], errors="coerce"), colorscale=_SEQUENTIAL_BLUE, showscale=True,
-            colorbar=dict(title=color_col, thickness=14, len=0.75),
-            size=10, opacity=0.85, line=dict(width=1, color="white"),
-        )
-        htmpl = id_line + f"{x_col} = %{{x}}<br>{y_col} = %{{y}}<br>{color_col} = %{{marker.color}}<extra></extra>"
+        color_vals = pd.to_numeric(sub[color_col], errors="coerce")
+        n_unique = color_vals.nunique(dropna=True)
+        if 0 < n_unique <= _MAX_ORDINAL_VALUES:
+            # Discrete/ordinal identity (block, cycle, soc_pct, ...) — one
+            # trace per value, each with its own ordinal-ramp step and a
+            # real legend entry, rather than a continuous colorbar the
+            # reader can't actually read a specific value off of for a
+            # handful of discrete groups. See _ORDINAL_STEPS above.
+            uniq = np.sort(color_vals.dropna().unique())
+            step_colors = _ordinal_ramp(len(uniq))
+            for v, color_hex in zip(uniq, step_colors):
+                mask = (color_vals == v).to_numpy()
+                label = f"{int(v)}" if float(v).is_integer() else f"{v:g}"
+                htmpl = id_line + f"{x_col} = %{{x}}<br>{y_col} = %{{y}}<extra>{color_col} = {label}</extra>"
+                data_traces.append(go.Scatter(
+                    x=sub[x_col][mask], y=sub[y_col][mask], mode="markers",
+                    marker=dict(
+                        color=color_hex, size=10, opacity=0.9,
+                        line=dict(width=1, color="rgba(11,11,11,0.35)"),
+                    ),
+                    customdata=customdata[mask], hovertemplate=htmpl,
+                    name=f"{color_col} {label}", showlegend=True,
+                ))
+            nan_mask = color_vals.isna().to_numpy()
+            if nan_mask.any():
+                htmpl = id_line + f"{x_col} = %{{x}}<br>{y_col} = %{{y}}<extra>{color_col} = n/a</extra>"
+                data_traces.append(go.Scatter(
+                    x=sub[x_col][nan_mask], y=sub[y_col][nan_mask], mode="markers",
+                    marker=dict(color="#c3c2b7", size=10, opacity=0.6, line=dict(width=1, color="rgba(11,11,11,0.35)")),
+                    customdata=customdata[nan_mask], hovertemplate=htmpl,
+                    name=f"{color_col} n/a", showlegend=True,
+                ))
+            discrete_legend = True
+        else:
+            marker = dict(
+                color=color_vals, colorscale=_SEQUENTIAL_BLUE, showscale=True,
+                colorbar=dict(title=color_col, thickness=14, len=0.75),
+                size=10, opacity=0.85, line=dict(width=1, color="white"),
+            )
+            htmpl = id_line + f"{x_col} = %{{x}}<br>{y_col} = %{{y}}<br>{color_col} = %{{marker.color}}<extra></extra>"
+            data_traces.append(go.Scatter(
+                x=sub[x_col], y=sub[y_col], mode="markers", marker=marker,
+                customdata=customdata, hovertemplate=htmpl, name="data",
+            ))
     else:
         marker = dict(size=10, color=_COLORS[0], opacity=0.85, line=dict(width=1, color="white"))
         htmpl = id_line + f"{x_col} = %{{x}}<br>{y_col} = %{{y}}<extra></extra>"
+        data_traces.append(go.Scatter(
+            x=sub[x_col], y=sub[y_col], mode="markers", marker=marker,
+            customdata=customdata, hovertemplate=htmpl, name="data",
+        ))
 
     x_n = pd.to_numeric(sub[x_col], errors="coerce")
     y_n = pd.to_numeric(sub[y_col], errors="coerce")
     valid = np.isfinite(x_n) & np.isfinite(y_n)
-    traces = [go.Scatter(
-        x=sub[x_col], y=sub[y_col], mode="markers", marker=marker,
-        customdata=customdata, hovertemplate=htmpl, name="data",
-    )]
+    traces = list(data_traces)
     if valid.sum() >= 3:
         m, b = np.polyfit(x_n[valid], y_n[valid], 1)
         x_fit = np.linspace(x_n[valid].min(), x_n[valid].max(), 100)
@@ -459,11 +582,19 @@ def build_scatter_pair(df: pd.DataFrame, x_col: str, y_col: str, color_col: str 
             name=f"trend  r={r:.2f}", showlegend=True,
         ))
     fig = go.Figure(traces)
+    # A discrete colour grouping needs a real (scrollable, right-side)
+    # legend for up to _MAX_ORDINAL_VALUES entries; the old top horizontal
+    # strip only fit a couple of items.
+    legend = (
+        dict(title=color_col, orientation="v")
+        if discrete_legend
+        else dict(orientation="h", y=1.1)
+    )
     fig.update_layout(
         title=dict(text=f"{y_col}  vs  {x_col}", x=0.02, xanchor="left"),
         xaxis_title=x_col, yaxis_title=y_col,
         template="plotly_white", height=460, margin=dict(l=60, r=40, t=60, b=50),
-        legend=dict(orientation="h", y=1.1),
+        legend=legend,
     )
     return fig
 
@@ -958,11 +1089,15 @@ export_btn.on_click(_run_export)
 
 if RUN_OPTIONS:
     run_sel.value = list(RUN_OPTIONS)[0]
+# Run Inspector is the default-visible tab, so it's populated eagerly.
+# Compare Runs and (especially) Feature Correlations are comparatively
+# expensive to build (~0.8s / ~4s on this dataset -- the latter runs a
+# Spearman heatmap plus the block-predictor and SoC-robust indicator
+# tables) and are deferred to first-view instead -- see "Lazy sub-tab
+# loading" below.
 _update_run_inspector()
-_update_compare()
 _update_sweep()
 _update_trend()
-_update_corr()
 soh_pane.object = build_soh_fig(_SOH_DF)
 degr_pane.object = build_degr_fig(_DEGR_DF)
 
@@ -1128,8 +1263,7 @@ incident_note = pn.pane.Alert(
     "Degr *charge* (CC/CV) and event-level features for any still-coarse Block 5 run remain "
     "unreliable. ℹ️ A block's SOH point can also show as **\"not final yet\"** (amber ✕, excluded "
     "from trends) if that block's C/5 discharge was still running on the Pi when last synced — "
-    "not an error, just rescan once it completes. See `CLAUDE.md` → \"⚠ Known Pi-side "
-    "logging-rate regression\" for the full write-up.",
+    "not an error, just rescan once it completes.",
     alert_type="info", sizing_mode="stretch_width",
 )
 
@@ -1150,23 +1284,46 @@ stat_row = pn.Row(
     sizing_mode="stretch_width",
 )
 
+# ── Lazy sub-tab loading ─────────────────────────────────────────────────────
+# Compare Runs / Feature Correlations are populated on first view rather than
+# at import time (see the note above _update_run_inspector()). Rescan still
+# refreshes every tab eagerly, including these two -- it's an explicit,
+# infrequent user action, not the page-load path this is optimizing.
+_COMPARE_TAB_INDEX = 1
+_CORR_TAB_INDEX = 4
+_lazy_loaded = {_COMPARE_TAB_INDEX: False, _CORR_TAB_INDEX: False}
+
+
+def _on_main_tab_active(event) -> None:
+    idx = event.new
+    if idx in _lazy_loaded and not _lazy_loaded[idx]:
+        _lazy_loaded[idx] = True
+        if idx == _COMPARE_TAB_INDEX:
+            _update_compare()
+        elif idx == _CORR_TAB_INDEX:
+            _update_corr()
+
+
+main_tabs = pn.Tabs(
+    ("Run Inspector", inspector_tab),
+    ("Compare Runs", compare_tab),
+    ("SoC Sweep", sweep_tab),
+    ("Degradation Trends", trends_tab),
+    ("Feature Correlations", corr_tab),
+    ("SOH History", soh_tab),
+    ("Degradation Cycles", degr_tab),
+    ("File Inventory", inventory_tab),
+    ("Export", export_tab),
+    sizing_mode="stretch_both",
+)
+main_tabs.param.watch(_on_main_tab_active, "active")
+
 main_content = pn.Column(
     stat_row,
     header_caption,
     incident_note,
     pn.Row(rescan_btn),
-    pn.Tabs(
-        ("Run Inspector", inspector_tab),
-        ("Compare Runs", compare_tab),
-        ("SoC Sweep", sweep_tab),
-        ("Degradation Trends", trends_tab),
-        ("Feature Correlations", corr_tab),
-        ("SOH History", soh_tab),
-        ("Degradation Cycles", degr_tab),
-        ("File Inventory", inventory_tab),
-        ("Export", export_tab),
-        sizing_mode="stretch_both",
-    ),
+    main_tabs,
     sizing_mode="stretch_both",
 )
 

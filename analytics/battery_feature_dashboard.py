@@ -36,7 +36,21 @@ pn.extension("plotly", "tabulator")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BASE_DIR       = os.path.dirname(__file__)
-LOG_DIR        = os.path.join(BASE_DIR, "LOGBATTEST_Complete")
+# The raw pulse-test/discharge logs (LOGBATTEST_Complete/, gitignored, ~2 GB)
+# live in a separate working copy from this script -- see analytics/CLAUDE.md's
+# "BATPI_DATA_DIR" section. BATPI_DATA_DIR overrides where LOG_DIR is
+# resolved (for portability to another machine); if unset, falls back to
+# _KNOWN_DATA_DIR below rather than BASE_DIR (same folder as this script).
+# BASE_DIR was the original fallback, but this repo's analytics/ folder never
+# actually contains the raw data -- that fallback only ever produced a
+# FileNotFoundError in practice (confirmed live: a fresh terminal not
+# inheriting a just-set User-scope env var, e.g. a new tab in an
+# already-running terminal app, silently fell through to it). Same
+# machine-specific-constant pattern export_old_ul18_12_summary.py's
+# DATA_REPO_PATH already uses for this identical problem.
+_KNOWN_DATA_DIR = r"C:\Users\TPKam\Documents\BatPi_Download"
+DATA_DIR       = os.environ.get("BATPI_DATA_DIR") or _KNOWN_DATA_DIR
+LOG_DIR        = os.path.join(DATA_DIR, "LOGBATTEST_Complete")
 DCIR_WIN_S     = 3.0    # seconds at pulse start used for DCIR average
 OCV_WIN_S      = 2.0    # seconds of prior rest used to estimate V_OCV
 PULSE_THRESH_A = 1.0    # |I| > this → pulse active

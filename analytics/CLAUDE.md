@@ -37,11 +37,11 @@ dashboard, pick a free port outside this list.
 
 | Port | Dashboard | Data | Run from |
 |---|---|---|---|
-| 5006 | `battery_feature_dashboard.py` | lab, `old_ul18_12` | needs `LOGBATTEST_Complete/` — see below |
+| 5006 | `battery_feature_dashboard.py` | lab, `old_ul18_12` | needs `LOGBATTEST_Complete/` — see `BATPI_DATA_DIR` below |
 | 5007 | `boxer_battery_dashboard.py` | field, old 41-start dataset | `analytics/` (git-tracked data) |
-| 5008 | `battery_feature_dashboard_unit2.py` | lab, `ul18_12_unit2` | needs `ul18_12_unit2/` log folder — see below |
+| 5008 | `battery_feature_dashboard_unit2.py` | lab, `ul18_12_unit2` | needs `ul18_12_unit2/` log folder — see `BATPI_DATA_DIR` below |
 | 5009 | `boxer_can_dashboard.py` | field, 15 CAN taps / 4799 starts | `analytics/` (git-tracked data) |
-| 5010 | `main_dashboard.py` (unified, all four above composed into one app) | all of the above | needs the lab log folders too — see below |
+| 5010 | `main_dashboard.py` (unified, all four above composed into one app) | all of the above | needs the lab log folders too — see `BATPI_DATA_DIR` below |
 | 5011 | `battery_feature_dashboard_unit3.py` | lab, `ul18_12_unit3` | needs `LOGBATTEST/ul18_12_unit3/`, filled by `pi_daily_report.py` |
 
 ```
@@ -53,19 +53,57 @@ panel serve main_dashboard.py --show                      # port 5010
 panel serve battery_feature_dashboard_unit3.py --show     # port 5011
 ```
 
-**`main_dashboard.py` can only run somewhere both the lab raw logs AND the
-field git-tracked data are present together** — in this git checkout alone
-that's not true: `battery_feature_dashboard.py`/`_unit2.py` need
-`LOGBATTEST_Complete/`/`ul18_12_unit2/`, which are intentionally gitignored
-and only exist in the separate `C:\Users\TPKam\Documents\BatPi_Download\`
-working copy (see root `CLAUDE.md`'s note on this). As of 2026-08-20,
-`main_dashboard.py`, `boxer_can_dashboard.py`, `lab_field_feature_comparison.py`,
-`dashboard_notes/`, `dataset_boxer_can/`, and the two lab summary-export
-folders (`exports/old_ul18_12_summary_export/`, `exports/ul18_12_unit2_summary_export/`)
-were copied into `BatPi_Download/` specifically so `main_dashboard.py` could
-be verified end-to-end there — **that copy is not automatic or git-tracked**;
-if any of those files change in this repo, re-copy them into
-`BatPi_Download/` before relying on the unified dashboard there again.
+### Where the raw lab data lives — run every dashboard from this git checkout
+
+`battery_feature_dashboard.py` and `battery_feature_dashboard_unit2.py` read
+raw pulse-test/discharge logs (`LOGBATTEST_Complete/`, ~2 GB;
+`ul18_12_unit2/`, ~1.2 GB) that are gitignored and don't live in this repo —
+on this machine they're in a separate working copy at
+`C:\Users\TPKam\Documents\BatPi_Download\` (see root `CLAUDE.md`).
+
+**Just run every dashboard — including `main_dashboard.py` — directly from
+this repo's `analytics/` folder. No env var needed, no copying code into
+`BatPi_Download/`, no running from there either:**
+```
+panel serve main_dashboard.py --show
+```
+
+Both lab dashboard files resolve `LOG_DIR` from `BATPI_DATA_DIR` if that env
+var is set, **else fall back to the hardcoded `_KNOWN_DATA_DIR` constant at
+the top of each file** (currently `C:\Users\TPKam\Documents\BatPi_Download`)
+— not to their own directory. That same-folder fallback was tried first
+(2026-08-26 morning) and dropped a few hours later the same day: this repo's
+`analytics/` folder never actually contains the raw data, so in practice that
+fallback only ever produced `FileNotFoundError`. The env-var-only version was
+also tried and hit a real, repeatable failure mode: a `$env:BATPI_DATA_DIR =
+...` set in one PowerShell window (even persisted via
+`[System.Environment]::SetEnvironmentVariable(..., "User")`, which only
+affects *new* processes) silently isn't visible in a *different* terminal
+tab/window if that tab's host process was already running — confirmed live,
+twice, including inside this Claude Code session's own shell. The hardcoded
+fallback sidesteps that class of failure entirely; `BATPI_DATA_DIR` still
+works as an override if you ever need a different data location (e.g. on
+another machine) — same machine-specific-constant-with-env-override pattern
+`export_old_ul18_12_summary.py`'s `DATA_REPO_PATH` already used for this
+identical problem, now applied to the two dashboard files too.
+
+If you genuinely move to a different machine, update `_KNOWN_DATA_DIR` in
+both `battery_feature_dashboard.py` and `battery_feature_dashboard_unit2.py`
+(or just set `BATPI_DATA_DIR` — either works).
+
+`boxer_battery_dashboard.py` and `boxer_can_dashboard.py` are unaffected by
+any of this — their data (`dataset_boxer/`, `dataset_boxer_can/`) is
+git-tracked and always lives in `analytics/`.
+
+⚠ Stray copies of `main_dashboard.py`, `boxer_can_dashboard.py`,
+`can_stats.py`, and `dashboard_notes/anova_note.md` /
+`soc_correlation_note.md` were placed directly in `BatPi_Download/` on
+2026-08-26 while chasing an earlier version of this bug — since deleted
+(2026-08-26, same day) once they were confirmed to be the reason a fix
+looked like it "wasn't working": running `panel serve` from inside
+`BatPi_Download/` was silently serving that stale code instead of failing
+loudly. Don't recreate them — if `BatPi_Download/` ever grows a `.py` file
+again, delete it; the data folder should hold data only.
 
 `main_dashboard.py` composes the other four's already-built Panel objects
 into one `pn.Tabs` (see its own module docstring for exactly how, and why
@@ -475,6 +513,38 @@ missing data.
 | `ul18_12_unit2/` | All raw CSV log files for `ul18_12_unit2` (own folder per battery — no filename prefix needed since the folder itself scopes it) |
 | `exports/` | Output folder for Excel and PNG exports |
 
+### `ul18_12_unit2` dashboard load-time work (2026-08-25)
+
+`ul18_12_unit2/` is 1500+ files / 1.2 GB by the 20-block campaign's end —
+building `battery_feature_dashboard_unit2.py`'s dataset from scratch (157
+test-day runs, 400+ Degr cycle files) was taking tens of seconds, on top of
+`main_dashboard.py`'s own composed-app load time (see the note on that file
+above). Two independent fixes, both in `testday_v2_features.py`:
+
+1. **A single-file disk cache** (`analytics/.v2_feature_cache/cache.pkl`,
+   gitignored, rebuilds automatically) keyed on `(path, mtime, size)` via
+   `cached_call()`/`_fingerprint()` — so a file that hasn't changed since
+   the last scan is served from an in-memory dict instead of re-read.
+   `parallel_map()` (ThreadPoolExecutor) parallelizes the CSV reads that
+   still need to happen (I/O-bound, pandas' C parser releases the GIL). A
+   first attempt used `joblib.Memory` for this — correct, but ~25-30ms/call
+   even on a cache *hit* on this machine, dominated by per-call filesystem
+   round-trips, not real work. **Important**: only cache small results
+   (feature dicts, tuples) — an early version cached `load_run()`'s full
+   raw per-run DataFrame for every test-day run and bloated the cache file
+   to 500+ MB, making the "warm" case slower than no cache at all. That's
+   why `build_dataset()` caches at the *extracted-features* granularity
+   (`_dataset_row()`) rather than caching `load_run()` itself; `load_run()`
+   stays uncached, since it's only ever called for one run at a time from
+   the interactive Run Inspector/Compare Runs tabs.
+2. **Lazy sub-tab population** in `battery_feature_dashboard_unit2.py`:
+   Compare Runs and Feature Correlations (the latter alone ~4s — a Spearman
+   heatmap plus the block-predictor and SoC-robust indicator tables) are
+   now built on first view (`main_tabs.param.watch("active")`) rather than
+   eagerly at import time; only the default-visible Run Inspector tab loads
+   up front. `Rescan` still refreshes every tab eagerly — it's an explicit,
+   infrequent user action, not the page-load path this targets.
+
 ---
 
 ## Key constants (battery_feature_dashboard.py)
@@ -616,12 +686,17 @@ regeneration:
 - `R_int_negative_current` (bool) — `I_load_A < 0` (also a subset, also a
   distinct, separately-flagged pattern).
 
-306 of 4799 starts (6.4%) are flagged. Every tab that plots R_int
-(Feature Trends, Tap Comparison, SoC & Temp Effects, Outlier Inspector, and
-the Lab vs Field Comparison tab via `lab_field_feature_comparison.py`) marks
-these points with `FLAGGED_MARKER` (grey ✕, same convention across every
-tab/dashboard) rather than excluding them — box/trend statistics are
-computed on the unflagged subset, but the points themselves stay visible.
+306 of 4799 starts (6.4%) are flagged. Every tab that plots INDIVIDUAL R_int
+points (Feature Trends, Tap Comparison, Outlier Inspector, and the Lab vs
+Field Comparison tab via `lab_field_feature_comparison.py`) marks them with
+`FLAGGED_MARKER` (grey ✕, same convention across every tab/dashboard) rather
+than excluding them — box/trend statistics are computed on the unflagged
+subset, but the points themselves stay visible. The tabs built on aggregates
+rather than individual points (SoC & Temp Effects, Feature vs SoC, Group
+Effects / ANOVA) instead *exclude* flagged rows from every R_int statistic —
+via `can_stats.clean_for()`, which applies the same rule the point-plotting
+tabs use for their trend/box statistics — since a heatmap cell or a p-value
+has no way to show a value as "present but not counted".
 `can_tapper14`'s 17.9% flagged rate (vs. 0-12.5% on every other tap) has no
 identified root cause — see `dashboard_notes/outlier_known_incidents.md`.
 Full writeup with per-tapper breakdown:
@@ -691,12 +766,122 @@ outside the then-N=40 cutoff; bumping to N=60 covered it). Bump
 size before treating it as done (rough size ≈ n_unique_starts × 9001 rows ×
 ~45 bytes/row).
 
+## Statistical analysis (`can_stats.py`) — added 2026-08-26
+
+Two dashboard tabs (`Feature vs SoC (new)`, `Group Effects / ANOVA (new)`) sit on
+top of `can_stats.py`. All maths is in that module (no Panel/Plotly), so an
+export script can import it directly.
+
+### SoC & Temp Effects tab — redesigned 2026-08-26 (was a per-point scatter)
+
+The original version coloured all 4799 points by a continuous temperature
+scale (`RdYlBu_r`). Reported problem: "I still don't see all colors" — correct
+diagnosis, and not fixable by adjusting the colour scale. At this n the points
+overplot into a solid wash regardless of the ramp; a per-point continuous
+colour also can't answer an *interaction* question ("is voltage drop worst
+specifically at low SoC **and** low temperature together, or does each act
+independently?"), which is what the tab exists to show.
+
+**Replaced with a 2-D binned grid** (`can_stats.joint_grid()`): SoC bin ×
+temperature band, one cell per combination, coloured by the mean feature value
+in that cell, value printed directly in the cell (only 18 cells/panel, so
+reading it beats hovering). Three panels share an identical grid: density
+("where are the starts"), mean voltage drop, mean R_int.
+
+⚠ **Temperature bins are NOT `TEMP_BIN_EDGES`** (the ANOVA tab's fixed
+0/10/20/30 °C bands). Verified on this dataset: fixed 10 °C-wide bands leave
+the `<0 °C` and `>30 °C` rows with single-digit cell counts (as low as **n=1**
+in one corner) — nowhere near enough to trust a cell mean, and exactly the
+kind of noisy corner that would have manufactured a false "effect" if left
+unguarded. `joint_grid()` uses **equal-count temperature terciles** instead
+(`can_stats.temperature_tercile_edges()`, same split as the Feature vs SoC
+tab's tercile panel) — every row gets ~1/3 of the data (n≥117 per cell on the
+current dataset), and any cell that still falls under `min_count` (default 20)
+is left blank rather than shown with an unreliable estimate.
+
+**Finding, with real support now (not just a colour-scale impression):** the
+coldest + lowest-SoC cell is the single darkest cell in both feature panels —
+mean V_drop 12.7% and mean R_int 11.6 mΩ, both the grid's maxima, at n=218 and
+n=206 respectively. Both features move together across the grid and the
+gradient runs mostly row-to-row (by temperature) rather than column-to-column
+(by SoC), consistent with the partial-correlation finding elsewhere in this
+file that temperature dominates SoC for R_int. This is a real, if modest,
+pattern — not proof of a strong effect; see the ρ / partial-ρ figures printed
+in each panel's own subtitle for the honest strength.
+
+Implementation note: `go.Heatmap`'s `textfont.color` only accepts one colour
+for the whole trace (checked against the installed plotly version, 6.7.0) —
+insufficient for cell text to stay legible across a light-to-dark ramp. Cell
+labels are drawn as individual `fig.add_annotation()` calls instead
+(`_add_cell_labels()`), each with its own colour chosen from which half of the
+ramp that cell's value falls in.
+
+### ⚠ `start_color` is a plotting palette, NOT a measurement
+
+`start_color` in `boxer_can_features_enriched.csv` is assigned
+`start_index % 9` over a 9-colour ColorBrewer Set1 palette — verified: every one
+of the 15 taps cycles the identical 9 colours in start-index order, and the
+value counts are near-uniform (525–541 each). **It carries no physical
+information about the start, the battery, or the vehicle.** Never correlate
+against it or read it as a start-quality label.
+
+It is deliberately offered as an ANOVA factor as a **null control**: every
+feature comes back p = 0.21–0.94, η² < 0.0023. If it ever comes out significant,
+the analysis code broke — not the battery.
+
+### Why Welch + Kruskal–Wallis, not just classic F
+
+Levene's test rejects equal variance for nearly every feature × `can_tapper_id`
+combination, and the per-tapper group sizes run 21 → 758 starts. Classic
+one-way F is the wrong tool on that shape and **does disagree with the robust
+tests here**: `crank_duration_s` across tappers gives classic F p = 0.056 ("no
+effect") vs Welch p = 7 × 10⁻⁹. The tab reports classic F, Welch F, and
+Kruskal–Wallis side by side, flags the Levene violation with ⚠, and uses
+Games–Howell (not Tukey HSD) for post-hoc pairs.
+
+### Headline results (n = 4799 starts)
+
+**Everything is "significant" and almost nothing is large.** At this n, p-values
+rank by sample size, not by importance — the tables are therefore sorted by η²
+and ρ², never by p.
+
+| Factor / predictor | Strongest effect | η² or ρ² |
+|---|---|---|
+| `can_tapper_id` (vehicle) | R_int (η²=0.054), cross-group imbalance (0.048) | all "Small" |
+| SoC bin | pre-crank voltage (η²=0.47 — **circular, see below**); next is V_drop at 0.032 | rest Small/Negligible |
+| Battery temperature | R_int ρ = −0.196, recovery time ρ = −0.146 | Weak |
+| SoC (continuous) | crank duration ρ = −0.187, V_drop ρ = −0.146 | ≤ 3.5% variance |
+| `start_color` | — | ≈ 0 (null control, as designed) |
+
+Full OLS variance partition (feature ~ SoC + temp + tapper) tops out at
+**R² = 0.086 for R_int** — i.e. all three known drivers together explain under
+9% of R_int's spread. The remaining variance is start-to-start noise, and that
+is the honest framing for §5.2 of the paper.
+
+**Temperature dominates SoC for R_int.** R_int vs SoC is flat (ρ = −0.061,
+partial ρ = −0.025, p = 0.09 net of temperature — the one relationship that
+does *not* survive controlling for the confounder), but the three temperature
+terciles separate cleanly (cold ≈ 10–11 mΩ vs warm ≈ 7.5–8 mΩ). The
+temperature-tercile panel on the Feature vs SoC tab shows this directly.
+
+### ⚠ `soc_pct_est_pack` vs pre-crank voltage is circular
+
+`soc_pct_est_pack` is derived from open-circuit voltage upstream of this repo
+(the CAN export ships it; `build_boxer_can_features.py` never computes it —
+confirmed by grep). Spearman ρ = 0.965 against pre-crank voltage confirms an
+OCV→SoC lookup. So `V_pre_group_avg_V`'s ρ = 0.97 and its η² = 0.47 in the
+SoC-binned ANOVA are **definitional, not physical findings**, and must not be
+cited as evidence that SoC predicts a voltage feature. Both tabs mark this row
+with † / a warning. Every other feature in those tables is a genuine measurement
+against SoC.
+
 ## Key files
 
 | File | Role |
 |---|---|
 | `main_dashboard.py` | Unified dashboard — composes all four below into one app on one URL/port (5010); see its own module docstring for exactly what it reuses vs. builds fresh |
-| `boxer_can_dashboard.py` | The dashboard — Start Profile, Feature Trends, Tap Comparison, SoC & Temp Effects, Post-Start Stability, Outlier Inspector, Lab vs Field Comparison |
+| `boxer_can_dashboard.py` | The dashboard — Start Profile, Feature Trends, Tap Comparison, SoC & Temp Effects, Post-Start Stability, Outlier Inspector, **Feature vs SoC**, **Group Effects / ANOVA**, Lab vs Field Comparison |
+| `can_stats.py` | Statistics behind the Feature vs SoC / ANOVA tabs — pure pandas/numpy/scipy, no Panel/Plotly, so the numbers can be recomputed in an export script without starting a server. See "Statistical analysis" below |
 | `build_boxer_can_features.py` | Reads raw zips (`--zips-dir`), writes `dataset_boxer_can/` (including the `invalid_R_int`/`R_int_current_sensor_dropout`/`R_int_negative_current` flag columns via `add_r_int_validity_flags()`); `--extract-outlier-traces` additionally writes the raw-trace drill-down files |
 | `exports/boxer_can_summary_export/` | R_int reliability diagnostic writeup + `summary_stats.csv`/`invalid_R_int_by_tapper.csv` for the CAN dataset — companion to `exports/RESULTS_SUMMARY_FOR_PAPER.md` §1 |
 | `pi_daily_report.py` | Daily Pi watchdog: sync logs over SSH + Gmail status mail (scheduled task `PiDailyReport`, see section below) |
@@ -707,7 +892,7 @@ size before treating it as done (rough size ≈ n_unique_starts × 9001 rows ×
 ## Daily Pi watchdog (`pi_daily_report.py`) — added 2026-10-30
 
 Laptop-side, stdlib-only. Windows scheduled task **`PiDailyReport`** runs it
-daily at 08:00 (`ddsm\pythonw.exe`, "start when available", so a sleeping
+twice daily, 09:00 and 21:00 (`ddsm\pythonw.exe`, "start when available", so a sleeping
 laptop catches up on wake). Each run: one read-only SSH probe of the Pi
 (`BatteryTestPi` alias in `~/.ssh/config`, key `key_pi`) → tar-over-SSH sync
 of new/grown files from `/media/pi/LOGBATTEST/<BATTERY_ID>/` into

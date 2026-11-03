@@ -2,8 +2,8 @@
 """
 pi_daily_report.py
 
-Daily laptop-side watchdog for the lab test bench (Raspberry Pi over
-SSH/Tailscale). Once a day (Windows Task Scheduler, see the bottom of this
+Twice-daily laptop-side watchdog for the lab test bench (Raspberry Pi over
+SSH/Tailscale). Twice a day (Windows Task Scheduler, see the bottom of this
 docstring) it:
 
 1. Copies every new or grown log file of the active battery from the Pi
@@ -34,7 +34,7 @@ Run by hand:
     python pi_daily_report.py --no-sync --no-mail
 
 Scheduled task (registered once, see analytics/CLAUDE.md): "PiDailyReport",
-daily 08:00, runs as soon as possible after a missed start (laptop asleep).
+daily 09:00 and 21:00, runs as soon as possible after a missed start (laptop asleep).
 """
 import argparse
 import csv
