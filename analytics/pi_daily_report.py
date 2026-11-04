@@ -184,6 +184,28 @@ def sync(listing):
 
 
 # ---------------------------------------------------------------- checks
+DEGR_CHARGE_LIMIT_H = 5.0
+
+
+def first_cycle_hit_limit(block):
+    """True if the local Degr_01 charge log of this block ran to the time limit."""
+    import glob
+    files = sorted(glob.glob(os.path.join(LOCAL_ROOT, BATTERY_ID,
+                                          f"Block_{block:02d}_Degr_01_charge_bdps_*.csv")))
+    if not files:
+        return False
+    try:
+        with open(files[-1], encoding="utf-8", errors="replace") as f:
+            rows = list(csv.reader(f))
+        hdr = rows[0]
+        ti = hdr.index("Timestamp")
+        t0 = dt.datetime.fromisoformat(rows[1][ti])
+        t1 = dt.datetime.fromisoformat(next(r for r in reversed(rows) if len(r) > ti and r[ti])[ti])
+    except Exception:
+        return False
+    return (t1 - t0).total_seconds() / 3600 >= DEGR_CHARGE_LIMIT_H - 0.05
+
+
 def analyse(p):
     """Returns (problems, info_lines, tables). problems = list of strings."""
     problems, info, tables = [], [], {}
@@ -268,7 +290,13 @@ def analyse(p):
                 problems.append(f"SOH stijgt van {prev:.1f} naar {pct:.1f} % in blok {b['block']} "
                                 "(rust/onderbreking? zie non-monotonie unit2).")
             if to > 0 and b is blocks[-1]:
-                problems.append(f"Blok {b['block']}: {to} degradatielading(en) haalden de taper niet.")
+                # Cycle 1 starts from ~10 % SoC after the sweep and always runs into the
+                # charge time limit: expected, so only report it as info.
+                if to == 1 and first_cycle_hit_limit(int(b["block"])):
+                    info.append(f"Blok {b['block']}: 1 laad-timeout, in cyclus 1 na de sweep "
+                                "(verwacht, start vanaf ~10 % SoC).")
+                else:
+                    problems.append(f"Blok {b['block']}: {to} degradatielading(en) haalden de taper niet.")
             rows.append([b.get("block"), f"{fnum(b.get('soh_c5_ah')) or 0:.2f}",
                          f"{pct:.1f}" if pct is not None else "", to,
                          b.get("unplanned_gap_h") or ""])
