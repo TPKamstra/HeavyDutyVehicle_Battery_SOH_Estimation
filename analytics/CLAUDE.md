@@ -927,7 +927,7 @@ Differences from unit2 that matter when reading its numbers:
 - **Setpoint Check**: each run is compared with the profile it replayed, matched
   on `Profile_Hash` (`PROFILE_FILES`, hashed for both LF and CRLF because git may
   rewrite line endings). **Add any new profile to `PROFILE_FILES`**, or its runs
-  count as unknown and all their discharge features are blanked.
+  count as unknown and are left out of the analyses.
 - **Frozen sink current (root cause found 2026-11-02).** The sink follows only
   `SOUR:CURR:NEG`; a negative `SOUR:CURR` is refused. Up to 2026-06-30 the replay
   set that limit per step at 1.2 x setpoint, so `old_ul18_12` runs carried exactly
@@ -935,9 +935,14 @@ Differences from unit2 that matter when reading its numbers:
   and current stayed at the previous limit: **every `ul18_12_unit2` run and unit3
   Block 1**. Discharge-event features of those runs are not what their names say,
   which includes unit2's `driving_aux_load_1_V_std` result and the crank caveat
-  above. unit3 keeps them, blanked unless "Also show" is ticked.
-- `_FEATURE_EVENT_PREFIXES` maps features to the events they rest on. Add new
-  feature families there, or they won't be blanked when an event fails.
+  above.
+- **Which unit3 runs count**: a run with any `failed` event is left out as a whole
+  of SoC Sweep, Degradation Trends and Feature Correlations unless "Also show" is
+  ticked, because each event starts from the state the previous ones left. That is
+  all of Block 1 (all 7 discharge events at -3.6 A). What stays valid from Block 1:
+  its C/5 (the SOH reference), its degradation cycles, and its SoC and OCV on Sweep
+  Quality (`soc_log_pct` agrees within 0.05 %-point); only its `profile_net_ah` is
+  hidden there. Excel export stays raw, with `discharge_tracking_ok`.
 - **Crank currents**: the BDPS accepts `SOUR:CURR:NEG` -60 but refuses -75 and -90 (`-222 Data out
   of range`; exact limit unknown), so the profile is capped at -60 A
   (`test_day_profile_v2_cap60A.csv`). The hot crank reaches about -35.6 A, not -55,

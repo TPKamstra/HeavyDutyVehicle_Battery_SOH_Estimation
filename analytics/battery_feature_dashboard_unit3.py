@@ -14,8 +14,9 @@ What differs from unit2, and why:
 - SOH is relative to Block 1 (_soh_reference.json), with the 50 % stop line.
 - Setpoint Check: every run is compared with the profile it actually replayed
   (matched on Profile_Hash). Until the fix of 2026-11-02 the BDPS sink current
-  stayed frozen at its previous limit, so features from discharge events of
-  those runs are invalid. They are hidden by default, never deleted.
+  stayed frozen at its previous limit (-3.6 A through all of Block 1), so those
+  runs are left out of every analysis by default, never deleted. Their SoC and
+  OCV stay on Sweep Quality: the SoC came from a step-down that worked.
 
 The test is still running, so every tab handles missing and half-written files.
 Use **Rescan** to pick up files synced by pi_daily_report.py.
@@ -559,29 +560,8 @@ def run_quality(path: str) -> dict:
     return v2feat.cached_call("unit3_quality_v3", key, lambda: _run_quality_impl(path))
 
 
-# Which raw feature columns rest on which scripted discharge event. A feature is
-# only as valid as the current its event really carried. total_ah_* and
-# alternator ratio integrate over several events, so they need all of them.
-_FEATURE_EVENT_PREFIXES = {
-    "wakeup_load_1_": [2], "wakeup_load_2_": [3], "glow_plug_like_load_1_": [4],
-    "crank_cold_": [5], "recovery_after_cold_": [5], "crank_1_": [5],
-    "driving_aux_load_1_": [8], "ramp_like_load_1_": [9],
-    "crank_hot_": [11], "recovery_after_hot_": [11], "crank_2_": [11],
-    "total_ah_": [2, 3, 4, 5, 8, 9, 11], "alternator_charge_after_": [2, 3, 4, 5],
-    "min_voltage": [2, 3, 4, 5, 8, 9, 11], "final_voltage": [2, 3, 4, 5, 8, 9, 11],
-}
 # V_ref bug, documented in the unit2 export's NOTES.md: never offered as a feature.
 _UNUSABLE_FEATURES = ["wakeup_load_2_R_int_mohm", "wakeup_load_2_R_int_mohm_invalid"]
-
-
-def _invalid_columns(columns, failed_events: set) -> list:
-    out = []
-    for c in columns:
-        for prefix, needs in _FEATURE_EVENT_PREFIXES.items():
-            if c.startswith(prefix) and failed_events.intersection(needs):
-                out.append(c)
-                break
-    return out
 
 
 def attach_quality(df: pd.DataFrame, sweep: pd.DataFrame) -> pd.DataFrame:
@@ -609,8 +589,9 @@ def attach_quality(df: pd.DataFrame, sweep: pd.DataFrame) -> pd.DataFrame:
         rec["target_soc_pct"] = target
         rec["profile_cap"] = q.get("profile")
         ev = q["events"]
-        rec["failed_events"] = {e["event_index"] for e in ev if e["status"] == "failed"}
-        rec["discharge_tracking_ok"] = q["status"] == "checked" and bool(ev) and not rec["failed_events"]
+        rec["discharge_tracking_ok"] = (
+            q["status"] == "checked" and bool(ev) and not any(e["status"] == "failed" for e in ev)
+        )
         rec["run_in_progress"] = bool(
             r["timestamp"] == newest and profile_max and r["run_duration_s"] < profile_max * 0.99
         )
@@ -624,21 +605,14 @@ def attach_quality(df: pd.DataFrame, sweep: pd.DataFrame) -> pd.DataFrame:
 
 
 def analysis_view(df: pd.DataFrame, include_invalid: bool) -> pd.DataFrame:
-    """Runs used for trends and correlations: never a run still being written,
-    and by default with every feature of a failed event blanked. Rows stay, so
-    voltage- and charge-side features of those runs remain usable."""
+    """Runs used for analysis: never a run still being written, and by default
+    only runs that passed the setpoint check. The whole run goes, not just the
+    failed events, because each event starts from the state the previous ones
+    left behind. A run that couldn't be checked has nothing vouching for it."""
     if df.empty:
         return df
-    out = df[~df["run_in_progress"]].copy()
-    if not include_invalid:
-        for i, r in out.iterrows():
-            cols = _invalid_columns(out.columns, r["failed_events"])
-            if not r["discharge_tracking_ok"] and not r["failed_events"]:
-                # Never checked (unknown profile, unreadable log), so nothing vouches for it.
-                cols = _invalid_columns(out.columns, set(range(13)))
-            if cols:
-                out.loc[i, cols] = np.nan
-    return out.drop(columns=["failed_events"])
+    out = df[~df["run_in_progress"]]
+    return out if include_invalid else out[out["discharge_tracking_ok"]]
 
 
 def build_tracking_table(path: str) -> pd.DataFrame:
@@ -741,7 +715,9 @@ def add_log_based_soc(sweep: pd.DataFrame, log_soh: pd.DataFrame) -> pd.DataFram
     return out
 
 
-def build_sweep_quality_fig(sweep: pd.DataFrame) -> go.Figure:
+def build_sweep_quality_fig(sweep: pd.DataFrame, invalid_net_ah_files: set = frozenset()) -> go.Figure:
+    """invalid_net_ah_files: runs whose profile didn't really replay. Their SoC and
+    OCV are fine (set by the step-down, before the profile), their net Ah isn't."""
     fig = make_subplots(rows=1, cols=3, subplot_titles=[
         "Achieved SoC vs target", "OCV after rest vs SoC", "Net Ah per profile run vs SoC",
     ], horizontal_spacing=0.08)
@@ -756,7 +732,8 @@ def build_sweep_quality_fig(sweep: pd.DataFrame) -> go.Figure:
         kw = dict(mode="markers+lines", line=dict(color=color), marker=dict(color=color, size=7))
         fig.add_trace(go.Scatter(x=g["target_soc_pct"], y=g["soc_cc_pct"], name=f"Block {b}", **kw), row=1, col=1)
         fig.add_trace(go.Scatter(x=g["soc_cc_pct"], y=g["ocv_after_rest"], showlegend=False, **kw), row=1, col=2)
-        fig.add_trace(go.Scatter(x=g["soc_cc_pct"], y=g["profile_net_ah"], showlegend=False, **kw), row=1, col=3)
+        net = g[~g["testday_file"].isin(invalid_net_ah_files)]
+        fig.add_trace(go.Scatter(x=net["soc_cc_pct"], y=net["profile_net_ah"], showlegend=False, **kw), row=1, col=3)
         hit = g[g["step_hit_cutoff"].astype(str).str.lower() == "true"]
         if not hit.empty:
             fig.add_trace(go.Scatter(x=hit["target_soc_pct"], y=hit["soc_cc_pct"], mode="markers", showlegend=False,
@@ -883,7 +860,8 @@ def build_feature_table(bdps_path: str, sensor_path: str | None = None) -> pd.Da
 
 def _run_label(r: dict) -> str:
     soc = f"SoC {r['target_soc']}%  ·  " if r.get("target_soc") is not None else ""
-    return f"Block {r['block']}  ·  {soc}OCV {r['ocv_label']:.2f}V  ·  {r['ts']}"
+    flag = "  ·  ⚠ setpoint check failed" if r.get("setpoint_failed") else ""
+    return f"Block {r['block']}  ·  {soc}OCV {r['ocv_label']:.2f}V  ·  {r['ts']}{flag}"
 
 
 # ── Compare Runs figure ────────────────────────────────────────────────────────
@@ -914,7 +892,7 @@ def build_compare_fig(labels: list, run_options: dict) -> go.Figure:
 
 
 # ── Feature Correlations ───────────────────────────────────────────────────────
-_CORR_EXCLUDE_COLS = {"battery_id", "kind", "timestamp", "filename", "soc_source", "profile_cap", "failed_events",
+_CORR_EXCLUDE_COLS = {"battery_id", "kind", "timestamp", "filename", "soc_source", "profile_cap",
                       "run_in_progress", "discharge_tracking_ok", "target_soc_pct"}
 
 
@@ -1351,7 +1329,7 @@ def export_excel(out_dir: str, dataset: pd.DataFrame, degr_df: pd.DataFrame, soh
     out_path = os.path.join(out_dir, fname)
 
     with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
-        dataset.drop(columns=["failed_events"], errors="ignore").to_excel(writer, sheet_name="Run Summary", index=False)
+        dataset.to_excel(writer, sheet_name="Run Summary", index=False)
         _SWEEP_DF.to_excel(writer, sheet_name="Sweep Points", index=False)
         _SOH_TABLE.to_excel(writer, sheet_name="Block SOH", index=False)
         degr_df.to_excel(writer, sheet_name="Degradation Cycles", index=False)
@@ -1386,8 +1364,18 @@ def _load_state() -> None:
     v2feat.flush_cache()
 
 
+def _failed_setpoint_files() -> set:
+    if _DATASET.empty:
+        return set()
+    return set(_DATASET.loc[~_DATASET["discharge_tracking_ok"], "filename"])
+
+
 def _run_options() -> dict:
-    infos = [r for r in v2feat.find_v2_testday_runs(LOG_DIR) if r["ocv_label"] is not None]
+    bad = _failed_setpoint_files()
+    infos = [
+        {**r, "setpoint_failed": os.path.basename(r["bdps_path"]) in bad}
+        for r in v2feat.find_v2_testday_runs(LOG_DIR) if r["ocv_label"] is not None
+    ]
     infos.sort(key=lambda r: (-(r["block"] or 0), -(r["target_soc"] or 0)))
     return {_run_label(r): r for r in infos}
 
@@ -1402,7 +1390,7 @@ stat_blocks = pn.indicators.Number(
     default_color=_COLORS[0], font_size="32pt", title_size="12pt", align="center",
 )
 stat_runs = pn.indicators.Number(
-    name="Test-day runs", value=0, format="{value}",
+    name="Test-day runs passing setpoint check", value=0, format="{value}",
     default_color=_COLORS[2], font_size="32pt", title_size="12pt", align="center",
 )
 stat_cycles = pn.indicators.Number(
@@ -1429,7 +1417,7 @@ compare_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_m
 
 sweep_feat_sel = pn.widgets.Select(name="Feature", options=_feature_options(_DATASET), width=320)
 sweep_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
-sweep_tbl = pn.widgets.Tabulator(_DATASET.drop(columns=["failed_events"], errors="ignore"), pagination="local", page_size=15, height=340, sizing_mode="stretch_width")
+sweep_tbl = pn.widgets.Tabulator(pd.DataFrame(), pagination="local", page_size=15, height=340, sizing_mode="stretch_width")
 
 trend_feat_sel = pn.widgets.Select(name="Feature", options=_feature_options(_DATASET), width=320)
 trend_soc_sel = pn.widgets.Select(name="SoC", options={"Mean across SoC": 0, **{f"{s} %": s for s in range(100, 0, -10)}}, value=0, width=180)
@@ -1443,14 +1431,14 @@ campaign_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_
 events_tbl = pn.widgets.Tabulator(_EVENTS_DF, height=220, sizing_mode="stretch_width")
 
 sweepq_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
-sweepq_tbl = pn.widgets.Tabulator(_SWEEP_DF.drop(columns=["battery_id"], errors="ignore"), pagination="local", page_size=20, height=480, sizing_mode="stretch_width")
+sweepq_tbl = pn.widgets.Tabulator(pd.DataFrame(), pagination="local", page_size=20, height=480, sizing_mode="stretch_width")
 
 track_overview_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
 track_run_sel = pn.widgets.Select(name="Test-day run", options=list(RUN_OPTIONS), width=460)
 track_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
 track_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=320, sizing_mode="stretch_width")
 
-show_invalid_toggle = pn.widgets.Checkbox(name="Also show features from events that failed the setpoint check", value=False)
+show_invalid_toggle = pn.widgets.Checkbox(name="Also show runs that failed the setpoint check", value=False)
 quality_banner = pn.pane.Alert("", alert_type="warning", sizing_mode="stretch_width")
 
 degr_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
@@ -1486,7 +1474,8 @@ def _update_header() -> None:
     latest = float(known["pi_soh_pct"].iloc[-1]) if not known.empty else 0.0
 
     stat_blocks.value = len(blocks_seen)
-    stat_runs.value = len(_DATASET)
+    stat_runs.value = int(_DATASET["discharge_tracking_ok"].sum()) if not _DATASET.empty else 0
+    stat_runs.format = f"{{value}} / {len(_DATASET)}"
     stat_cycles.value = n_complete_cycles
     stat_cycles.format = f"{{value}} / {n_cycles}"
     stat_soh.value = latest
@@ -1502,9 +1491,11 @@ def _update_header() -> None:
     if n_bad:
         quality_banner.object = (
             f"**{n_bad} of {len(done)} finished run(s) failed the setpoint check**, normally the runs from before "
-            "the Pi fix of 2026-11-02, when discharge current stayed frozen. Features from the failed events are "
-            "hidden in the SoC Sweep and Degradation Trends charts and in Feature Correlations unless you tick the "
-            "box below. Tables and the Excel export keep the raw values, with `discharge_tracking_ok` next to them."
+            "the Pi fix of 2026-11-02, when discharge current stayed frozen. They are left out of SoC Sweep, "
+            "Degradation Trends and Feature Correlations unless you tick the box below. They stay on Setpoint "
+            "Check, and with a ⚠ in Run Inspector and Compare Runs. Sweep Quality keeps their SoC and OCV, which "
+            "are sound, and hides only their net Ah. The Excel export keeps the raw values, with "
+            "`discharge_tracking_ok` next to them."
         )
         quality_banner.visible = True
     else:
@@ -1533,7 +1524,19 @@ def _view() -> pd.DataFrame:
 
 
 def _update_sweep(event=None):
-    sweep_pane.object = build_sweep_fig(_view(), sweep_feat_sel.value)
+    view = _view()
+    sweep_pane.object = build_sweep_fig(view, sweep_feat_sel.value)
+    sweep_tbl.value = view
+
+
+def _update_sweep_quality(event=None):
+    bad = set() if show_invalid_toggle.value else _failed_setpoint_files()
+    sweepq_pane.object = build_sweep_quality_fig(_SWEEP_DF, bad)
+    tbl = _SWEEP_DF.drop(columns=["battery_id"], errors="ignore")
+    if bad:
+        tbl = tbl.copy()
+        tbl.loc[tbl["testday_file"].isin(bad), "profile_net_ah"] = np.nan
+    sweepq_tbl.value = tbl
 
 
 def _update_trend(event=None):
@@ -1571,7 +1574,7 @@ def _update_corr(event=None):
     corr_status.object = (
         f"Showing **{len(df)} run(s)** across **{n_blocks} block(s)**"
         + (" (cutoff runs excluded)" if corr_clean_toggle.value else " (cutoff runs included)")
-        + ("; features of failed events included" if show_invalid_toggle.value else "; features of failed events blanked")
+        + ("; runs that failed the setpoint check included" if show_invalid_toggle.value else "; runs that failed the setpoint check excluded")
     )
     _update_scatter()
     view = _view()
@@ -1600,6 +1603,7 @@ def _update_tracking(event=None):
 
 def _on_invalid_toggle(event=None):
     _update_sweep()
+    _update_sweep_quality()
     _update_trend()
     if _lazy_loaded[_CORR_TAB_INDEX]:
         _update_corr()
@@ -1620,8 +1624,6 @@ def _rescan(event=None):
     sweep_feat_sel.options = feat_opts
     trend_feat_sel.options = feat_opts
 
-    sweep_tbl.value = _DATASET.drop(columns=["failed_events"], errors="ignore")
-    sweepq_tbl.value = _SWEEP_DF.drop(columns=["battery_id"], errors="ignore")
     soh_tbl.value = _SOH_TABLE
     degr_tbl.value = _DEGR_DF
     inventory_tbl.value = build_file_inventory(LOG_DIR)
@@ -1634,7 +1636,7 @@ def _rescan(event=None):
     _update_corr()
     _update_campaign()
     _update_tracking()
-    sweepq_pane.object = build_sweep_quality_fig(_SWEEP_DF)
+    _update_sweep_quality()
     soh_pane.object = build_soh_fig(_SOH_DF)
     degr_pane.object = build_degr_fig(_DEGR_DF)
 
@@ -1670,7 +1672,7 @@ if RUN_OPTIONS:
 _update_run_inspector()
 _update_campaign()
 _update_tracking()
-sweepq_pane.object = build_sweep_quality_fig(_SWEEP_DF)
+_update_sweep_quality()
 _update_sweep()
 _update_trend()
 soh_pane.object = build_soh_fig(_SOH_DF)
@@ -1694,7 +1696,9 @@ sweepq_tab = pn.Column(
         "Does each run start at the intended SoC? `soc_cc_pct` is the Pi's own count. `soc_log_pct` is an "
         "independent check: the step-down and test-day logs integrated here, over the C/5 integrated the same "
         "way. The OCV curve per block shows how the OCV–SoC relation moves with ageing. A red ✕ marks a "
-        "step-down that hit the cutoff before reaching its target."
+        "step-down that hit the cutoff before reaching its target.\n\n"
+        "Runs that failed the setpoint check stay here: SoC and OCV are set by the step-down and rest, before "
+        "the profile replays. Only their net Ah is hidden, because that does depend on the replay."
     ),
     sweepq_pane, sweepq_tbl,
     sizing_mode="stretch_width",
