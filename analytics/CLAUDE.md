@@ -915,6 +915,20 @@ Port 5011, also the "Lab — unit3" tab of `main_dashboard.py`. Data:
 click **Rescan** after a sync. Started as a copy of the unit2 script; never pool
 the two. Tabs added: Campaign, Sweep Quality, Setpoint Check.
 
+Dashboard layout rules, each from a reproduced bug (2026-11-05):
+
+- Plots whose figure gets replaced in a callback use `dashboard_panes.plot_pane()`.
+  Without a pane height the first replacement collapsed the plot to 0 px and the
+  table below moved up over its place.
+- The unit2/unit3 `main_tabs` use `dynamic=True`: otherwise all plots of all tabs
+  draw at page load, each resizing and reporting back to the server (475 messages
+  received at load, now 90). `main_dashboard.py`'s outer tabs must be dynamic too:
+  otherwise a hidden section's text stays on top of the open one and swallows
+  clicks on its tabs. Its module imports must stay outside the browser session, or
+  that session falls out of sync (`reference p1568 isn't known` in the console).
+- A running `panel serve` keeps the script source it started with: restart it to
+  pick up a code change, a browser refresh isn't enough.
+
 Differences from unit2 that matter when reading its numbers:
 
 - **SoC** comes from `_sweep_points.csv` (`soc_cc_pct`), not from an OCV table.

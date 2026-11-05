@@ -106,13 +106,21 @@ def _import_quietly(name: str):
     than relying on an insertion made earlier at module-exec time -- see the
     comment by `_THIS_DIR`'s definition above for why the earlier one gets
     silently wiped by Bokeh before this function is ever called from a
-    deferred (`pn.state.onload`) tab load."""
+    deferred (`pn.state.onload`) tab load.
+
+    The import runs in a worker thread, so outside this browser session: the
+    modules are shared by all sessions and build their widgets at import. Done
+    inside the first session, that session's browser got patches for models it
+    never received (`reference p1568 isn't known`) and fell out of sync with the
+    server, while later sessions were fine."""
     if _THIS_DIR not in sys.path:
         sys.path.insert(0, _THIS_DIR)
     pn.viewable.Viewable.servable = lambda self, *a, **kw: self
     try:
         import importlib
-        return importlib.import_module(name)
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(importlib.import_module, name).result()
     finally:
         pn.viewable.Viewable.servable = _real_servable
 
@@ -202,6 +210,8 @@ _loaded = [False] * len(_TAB_BUILDERS)
 
 tabs = pn.Tabs(
     *[(label, _placeholder(label)) for label, _ in _TAB_BUILDERS],
+    # Required: without it a hidden section's text stays on top of the open one
+    # and swallows clicks on its tabs.
     dynamic=True,
     sizing_mode="stretch_both",
 )

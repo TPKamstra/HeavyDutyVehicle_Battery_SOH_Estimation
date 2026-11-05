@@ -31,6 +31,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 import testday_v2_features as v2feat
+from dashboard_panes import plot_pane
 
 warnings.filterwarnings("ignore")
 pn.extension("plotly", "tabulator")
@@ -903,7 +904,7 @@ header_caption = pn.pane.Markdown("", sizing_mode="stretch_width")
 rescan_btn = pn.widgets.Button(name="🔄  Rescan log folder", button_type="primary", width=200)
 
 run_sel = pn.widgets.Select(name="Test-day run", options=list(RUN_OPTIONS), width=380)
-run_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+run_pane = plot_pane()
 run_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=400, sizing_mode="stretch_width")
 
 compare_sel = pn.widgets.MultiSelect(
@@ -911,18 +912,18 @@ compare_sel = pn.widgets.MultiSelect(
     options=list(RUN_OPTIONS), size=10, width=420,
     value=list(RUN_OPTIONS)[:3],
 )
-compare_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+compare_pane = plot_pane()
 
 sweep_feat_sel = pn.widgets.Select(name="Feature", options=_feature_options(_DATASET), width=320)
-sweep_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+sweep_pane = plot_pane()
 sweep_tbl = pn.widgets.Tabulator(_DATASET, pagination="local", page_size=15, height=340, sizing_mode="stretch_width")
 
 trend_feat_sel = pn.widgets.Select(name="Feature", options=_feature_options(_DATASET), width=320)
-trend_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+trend_pane = plot_pane()
 
-soh_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+soh_pane = plot_pane()
 
-degr_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+degr_pane = plot_pane()
 degr_tbl = pn.widgets.Tabulator(_DEGR_DF, pagination="local", page_size=15, height=340, sizing_mode="stretch_width")
 
 inventory_tbl = pn.widgets.Tabulator(
@@ -932,11 +933,11 @@ inventory_tbl = pn.widgets.Tabulator(
 
 corr_clean_toggle = pn.widgets.Checkbox(name="Exclude coarse-sampled / cutoff runs (recommended)", value=True)
 corr_status = pn.pane.Markdown("", sizing_mode="stretch_width")
-corr_heatmap_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+corr_heatmap_pane = plot_pane()
 corr_x_sel = pn.widgets.Select(name="X axis", options=[], width=260)
 corr_y_sel = pn.widgets.Select(name="Y axis", options=[], width=260)
 corr_color_sel = pn.widgets.Select(name="Colour by", options=[], width=260)
-corr_scatter_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+corr_scatter_pane = plot_pane()
 predictor_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=380, sizing_mode="stretch_width")
 soc_robust_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=380, sizing_mode="stretch_width")
 
@@ -1314,6 +1315,9 @@ main_tabs = pn.Tabs(
     ("Degradation Cycles", degr_tab),
     ("File Inventory", inventory_tab),
     ("Export", export_tab),
+    # Only the open tab is in the browser. Otherwise all its plots draw at page
+    # load, each resizing and reporting back to the server.
+    dynamic=True,
     sizing_mode="stretch_both",
 )
 main_tabs.param.watch(_on_main_tab_active, "active")

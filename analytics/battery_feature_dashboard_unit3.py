@@ -38,6 +38,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 import testday_v2_features as v2feat
+from dashboard_panes import plot_pane
 
 warnings.filterwarnings("ignore")
 pn.extension("plotly", "tabulator")
@@ -1120,6 +1121,9 @@ def build_block_predictor_table(dataset: pd.DataFrame, soh_df: pd.DataFrame) -> 
         })
     out = pd.DataFrame(rows, columns=cols)
     if not out.empty:
+        # With few blocks a whole column can be None, which isn't numeric yet.
+        for c in ("r_this_block", "r_next_block"):
+            out[c] = pd.to_numeric(out[c])
         out = out.reindex(out["r_next_block"].abs().sort_values(ascending=False, na_position="last").index)
         out = out.reset_index(drop=True)
     return out
@@ -1405,7 +1409,7 @@ header_caption = pn.pane.Markdown("", sizing_mode="stretch_width")
 rescan_btn = pn.widgets.Button(name="🔄  Rescan log folder", button_type="primary", width=200)
 
 run_sel = pn.widgets.Select(name="Test-day run", options=list(RUN_OPTIONS), width=380)
-run_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+run_pane = plot_pane()
 run_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=400, sizing_mode="stretch_width")
 
 compare_sel = pn.widgets.MultiSelect(
@@ -1413,35 +1417,35 @@ compare_sel = pn.widgets.MultiSelect(
     options=list(RUN_OPTIONS), size=10, width=420,
     value=list(RUN_OPTIONS)[:3],
 )
-compare_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+compare_pane = plot_pane()
 
 sweep_feat_sel = pn.widgets.Select(name="Feature", options=_feature_options(_DATASET), width=320)
-sweep_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+sweep_pane = plot_pane()
 sweep_tbl = pn.widgets.Tabulator(pd.DataFrame(), pagination="local", page_size=15, height=340, sizing_mode="stretch_width")
 
 trend_feat_sel = pn.widgets.Select(name="Feature", options=_feature_options(_DATASET), width=320)
 trend_soc_sel = pn.widgets.Select(name="SoC", options={"Mean across SoC": 0, **{f"{s} %": s for s in range(100, 0, -10)}}, value=0, width=180)
-trend_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+trend_pane = plot_pane()
 
-soh_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+soh_pane = plot_pane()
 soh_tbl = pn.widgets.Tabulator(_SOH_TABLE, height=300, sizing_mode="stretch_width")
 
 campaign_status = pn.pane.Markdown("", sizing_mode="stretch_width")
-campaign_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+campaign_pane = plot_pane()
 events_tbl = pn.widgets.Tabulator(_EVENTS_DF, height=220, sizing_mode="stretch_width")
 
-sweepq_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+sweepq_pane = plot_pane()
 sweepq_tbl = pn.widgets.Tabulator(pd.DataFrame(), pagination="local", page_size=20, height=480, sizing_mode="stretch_width")
 
-track_overview_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+track_overview_pane = plot_pane()
 track_run_sel = pn.widgets.Select(name="Test-day run", options=list(RUN_OPTIONS), width=460)
-track_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+track_pane = plot_pane()
 track_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=320, sizing_mode="stretch_width")
 
 show_invalid_toggle = pn.widgets.Checkbox(name="Also show runs that failed the setpoint check", value=False)
 quality_banner = pn.pane.Alert("", alert_type="warning", sizing_mode="stretch_width")
 
-degr_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+degr_pane = plot_pane()
 degr_tbl = pn.widgets.Tabulator(_DEGR_DF, pagination="local", page_size=15, height=340, sizing_mode="stretch_width")
 
 inventory_tbl = pn.widgets.Tabulator(
@@ -1451,11 +1455,11 @@ inventory_tbl = pn.widgets.Tabulator(
 
 corr_clean_toggle = pn.widgets.Checkbox(name="Exclude cutoff runs (recommended)", value=True)
 corr_status = pn.pane.Markdown("", sizing_mode="stretch_width")
-corr_heatmap_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+corr_heatmap_pane = plot_pane()
 corr_x_sel = pn.widgets.Select(name="X axis", options=[], width=260)
 corr_y_sel = pn.widgets.Select(name="Y axis", options=[], width=260)
 corr_color_sel = pn.widgets.Select(name="Colour by", options=[], width=260)
-corr_scatter_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+corr_scatter_pane = plot_pane()
 predictor_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=380, sizing_mode="stretch_width")
 soc_robust_tbl = pn.widgets.Tabulator(pd.DataFrame(), height=380, sizing_mode="stretch_width")
 
@@ -1524,9 +1528,13 @@ def _view() -> pd.DataFrame:
 
 
 def _update_sweep(event=None):
-    view = _view()
-    sweep_pane.object = build_sweep_fig(view, sweep_feat_sel.value)
-    sweep_tbl.value = view
+    sweep_pane.object = build_sweep_fig(_view(), sweep_feat_sel.value)
+
+
+def _update_sweep_table(event=None):
+    # Apart from _update_sweep: a new feature doesn't change the rows, and
+    # resending the whole table on each selection costs ~100 websocket messages.
+    sweep_tbl.value = _view()
 
 
 def _update_sweep_quality(event=None):
@@ -1603,6 +1611,7 @@ def _update_tracking(event=None):
 
 def _on_invalid_toggle(event=None):
     _update_sweep()
+    _update_sweep_table()
     _update_sweep_quality()
     _update_trend()
     if _lazy_loaded[_CORR_TAB_INDEX]:
@@ -1632,6 +1641,7 @@ def _rescan(event=None):
     _update_run_inspector()
     _update_compare()
     _update_sweep()
+    _update_sweep_table()
     _update_trend()
     _update_corr()
     _update_campaign()
@@ -1674,6 +1684,7 @@ _update_campaign()
 _update_tracking()
 _update_sweep_quality()
 _update_sweep()
+_update_sweep_table()
 _update_trend()
 soh_pane.object = build_soh_fig(_SOH_DF)
 degr_pane.object = build_degr_fig(_DEGR_DF)
@@ -1926,6 +1937,9 @@ main_tabs = pn.Tabs(
     ("Degradation Cycles", degr_tab),
     ("File Inventory", inventory_tab),
     ("Export", export_tab),
+    # Only the open tab is in the browser. Otherwise all its plots draw at page
+    # load, each resizing and reporting back to the server.
+    dynamic=True,
     sizing_mode="stretch_both",
 )
 main_tabs.param.watch(_on_main_tab_active, "active")

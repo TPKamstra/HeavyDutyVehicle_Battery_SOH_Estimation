@@ -30,6 +30,7 @@ from plotly.subplots import make_subplots
 from scipy import stats as _scipy_stats
 
 import testday_v2_features as v2feat
+from dashboard_panes import plot_pane
 
 warnings.filterwarnings("ignore")
 pn.extension("plotly", "tabulator")
@@ -2168,8 +2169,8 @@ v2_tbl = pn.widgets.Tabulator(
     pd.DataFrame(), pagination="local", page_size=15,
     height=360, sizing_mode="stretch_width",
 )
-v2_crank_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
-v2_soh_pane = pn.pane.Plotly(go.Figure(), config={"responsive": True}, sizing_mode="stretch_width")
+v2_crank_pane = plot_pane()
+v2_soh_pane = plot_pane()
 
 
 def _build_v2_crank_fig(df: pd.DataFrame) -> go.Figure:
