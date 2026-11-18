@@ -913,7 +913,8 @@ target-vs-Coulomb SoC in `_sweep_points.csv`, USB free space, dashboard RSS)
 Port 5011, also the "Lab — unit3" tab of `main_dashboard.py`. Data:
 `BatPi_Download/LOGBATTEST/ul18_12_unit3/`, filled by `pi_daily_report.py`, so
 click **Rescan** after a sync. Started as a copy of the unit2 script; never pool
-the two. Tabs added: Campaign, Sweep Quality, Setpoint Check.
+the two. Tabs (2026-11-18): Campaign, Sweep Quality, Setpoint Check, Feature Explorer,
+Detailed Features, Degradation Cycles, Diagnostics, File Inventory, Export.
 
 Dashboard layout rules, each from a reproduced bug (2026-11-05):
 
@@ -964,9 +965,111 @@ Differences from unit2 that matter when reading its numbers:
   stays `ok` since the check uses medians: compare `sp_peak_A`/`meas_peak_A`.
 - `crank_*_R_int_apparent_mohm` divides by I_peak, but the cold crank starts from
   the -8 A glow load, so it reads low (24.7 vs 28.5 mΩ). `crank_*_R_int_deltaI_mohm`
-  divides by the actual step; compare cold and hot with that one.
+  divides by the actual step; compare cold and hot with that one. Since 2026-11-17
+  it is computed in `extract_features()` (was in the dashboard), so every battery's
+  dataset has it.
 - `voltage_limited` means the 10.2 V sink floor limited the current, as at 10 % SoC.
-  Those runs keep their features. Transient V_min falls below the floor from about
-  40 % SoC (9.24 V at 10 %, Block 2).
+  Transient V_min falls below the floor from about 40 % SoC (9.24 V at 10 %, Block 2).
+  **Superseded 2026-11-17: such runs no longer keep all their features.** Validity
+  is now per feature per run, see the next item.
+- **Per-feature validity** (`testday_v2_features.feature_validity()`, rules listed
+  per feature in `FEATURE_CATALOG`, table in `FEATURE_OVERVIEW.md` §1a). Computed in
+  `run_quality()` (cache tag `unit3_quality_v4`: bump it when a rule changes) and
+  stored as `<feature>__invalid_reason` ("" = valid). `_DATASET` keeps raw values;
+  `mask_invalid()` blanks invalid ones and feeds every statistic (heatmap, scatter,
+  predictor tables, Explorer numbers). Plots draw invalid values as grey ✕
+  (`FLAGGED_MARKER`) when "Also show …" is ticked, and always on Feature Explorer.
+  Result (Blocks 2–10): every run at 20–100 % SoC fully valid; at 10 % the cold
+  crank resistance is invalid in Blocks 3, 4, 5, 10 (20–32 A instead of 60 A) and
+  the whole cold crank, V_pre included (10.20 V), in Blocks 7–9. Two choices with
+  a reason:
+  - I_peak is compared with the setpoint reachable **after the 0.1 s current rise**
+    (`CURRENT_RISE_S`): the hot crank's -55 A lasts 0.05 s and no battery reaches
+    it. Against the raw profile peak every hot crank would fail.
+  - Crank head features (V_min, I_peak, R_int) use `not_failed`, not `tracking`:
+    in Blocks 2 and 6 at 10 % the inrush delivers full current (99 %/136 %) and
+    only the sustained part reaches the floor, which the median-based status sees.
+- **Feature Explorer tab** (index 8, loaded on first open): catalogue text, the raw
+  event for all blocks at one SoC with the feature's window shaded (reads ~10 runs
+  uncached, ~1 s), the feature against SoC, against Ah removed (`removed_ah` =
+  `removed_ah_before_run` from `_sweep_points.csv`) and against SOH, plus n valid,
+  r_soc, r_runs, r_charge_matched, campaign shift vs within-block spread vs one ADC
+  step (8 mV, the most common step during `rest_baseline`), and a conclusion label
+  (`feature_conclusion()`; thresholds `CONCL_*`).
+- **Profile constants and duplicates** (catalogue `kind`) are left out of the
+  heatmap, scatter lists and predictor tables, and stay in the Excel export:
+  `total_ah_discharged`, `run_duration_s`, crank `I_peak_A`; `total_ah_charged`
+  (= `alternator_charge_after_cold_Ah`), `crank_hot_R_int_apparent_mohm`
+  (= the deltaI version, the hot crank starts from ~0 A).
+- **`recovery_after_cold_V_plus30s` was the post-ramp rest until 2026-11-17**: each
+  `recovery_rest` took the last crank's label, so event 10 overwrote event 6. Fixed
+  in `extract_features()` (cache tag `dataset_row_v2`); the post-ramp value is now
+  `recovery_after_ramp_V_plus30s`. Exports made before that date carry the wrong
+  column. In unit2's odd-sequence runs the fix adds a few `recovery_after_<event>_*`
+  columns.
+- **Tests**: `analytics/tests/` (catalogue ↔ `extract_features()`, validity rules on
+  synthetic runs and on Block 4 at 10/20 %, and the campaign-wide controls above).
+  `C:\Users\TPKam\miniconda3\envs\ddsm\python.exe -m pytest analytics/tests -q`
+  (~10 s; real-data tests skip without the data folder).
+- **Block-level SOH correlations of voltage features are an artefact** (found
+  2026-11-13). SoC levels are a percentage of each block's own capacity, so a
+  fixed level means less Ah removed as the battery ages; the rest OCV follows
+  the Ah removed (quadratic fit: 15 mV RMS vs 101 mV against relative SoC). OCV,
+  `rest_baseline_Vmean` and other absolute voltages therefore get |r| = 1 with
+  SOH on block means, while pooled over runs (SoC unknown) r ≈ −0.23. The
+  predictor tables now add `r_runs` and `r_charge_matched` (residual after a
+  quadratic fit on Ah removed) and rank on the latter.
+- **Degr cycle 1 discharge of ~0 Ah is normal from Block 3 on** (checked
+  2026-11-17): the sweep ends at 10 % SoC, close enough to the cutoff that the
+  first discharge stops within ~5 s (300–650 byte file). Shown as `complete
+  (sweep left the battery at cutoff)`, `discharge_ah` 0, not as a fragment.
+- **Campaign stop estimate** fits the last `PROJECTION_BLOCKS` (4) blocks only and
+  adds the expected start of the next C/5 from the median block duration (~37 h
+  in Blocks 7–10). A fit over all blocks lagged: Block 2 rose, Blocks 3–5 fell fastest.
+- **Degradation Trends** defaults to one line per SoC level against SOH % (x axis
+  reversed). The ~110 mΩ cold-crank resistances at 10 % SoC are now invalid (see
+  per-feature validity), so the 10 % line no longer jumps.
 - Local copies under provisional names (`Block_01_SoC060_stepdown_*`) are ignored:
   the Pi renames them once the OCV is known, and the sync never deletes.
+- **Detailed Features tab and graph audit (2026-11-18, brief `DETAILED_FEATURES_BRIEF.md`).**
+  - `detailed_features.py` holds curve features with `DETAILED_CATALOG`:
+    - per-step ohmic/polarisation split;
+    - a 1-RC + drift fit on glow and wakeup;
+    - a two-exponential relaxation fit after the cranks and the ramp;
+    - charge acceptance in `alternator_charge`;
+    - lab features: start of the C/5, CC/CV charges, the 30 min rests after
+      each step-down.
+
+    Each feature is labelled `field` or `lab`. A field feature inherits its
+    parent's `__invalid_reason` via `attach_run_validity()`. Cache tags are
+    `detailed_v2_*`; bump `CACHE_VERSION` when a definition changes.
+  - `soh_eval.py` is the paper's leave-one-block-out evaluation and
+    reproduces `tab:features` exactly (18.8 / 17.1 / 10.1; a test checks it).
+  - `detailed_figures.py` holds the figures, the ranking table and the
+    "Export for paper" output (`exports/unit3_paper/`, gitignored).
+  - Results are in `FEATURE_OVERVIEW.md` §1b. Best: `relax_hot_tau2_s` at
+    5.6 SOH %-points (baseline 17.2), against 10.1 for the cold-crank
+    resistance. Read it as a lead (about 40 candidates, 10 blocks).
+  - Data finding: the C/5 voltage of Blocks 4–7 and 11 has 75–100 mV
+    disturbances (rises later in the discharge). C/5 curve features are
+    rejected there; the capacity (current integral) is unaffected.
+- **Graph → paper element.** Every graph has a *Question* / *Paper* line
+  above it. Removed 2026-11-18:
+  - Degradation Trends (relative-SoC view = the artefact);
+  - the Spearman heatmap (pooled over SoC and blocks);
+  - the this/next-block predictor table and the SoC-robust table (replaced by
+    the ranking on Detailed Features);
+  - the SOH History tab (its plot is now on Campaign).
+
+  Run Inspector, Compare Runs, SoC Sweep and the pairwise scatter (default
+  x = `removed_ah`, no longer block against block) moved to **Diagnostics**.
+
+  | Tab · graph | Paper element |
+  |---|---|
+  | Campaign · SOH per block, C/5 Ah per block | Fig. 2a, label paragraph |
+  | Sweep Quality | SoC-accuracy sentence (≤ 0.85 %-point) |
+  | Setpoint Check overview | Fig. 3 |
+  | Feature Explorer · raw / vs Ah removed / vs SoC / vs SOH | method text, Fig. 2b/2c, Results |
+  | Detailed Features · raw + fit / vs Ah removed / vs SOH at equal charge / ranking | method figure, Fig. 2c type, Results, tab:features |
+  | Degradation Cycles | Discussion (charge return, sulphation) |
+  | Diagnostics (all) | none: checking only |
